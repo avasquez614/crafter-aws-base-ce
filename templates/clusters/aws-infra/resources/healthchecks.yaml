@@ -21,10 +21,8 @@ Parameters:
     Default: 3
   AlarmsSlackChannelHookUrl:
     Type: String
-    Default: 'https://hooks.slack.com/services/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'
   PagerDutyIntegrationUrl:
     Type: String
-    Default: 'https://events.pagerduty.com/integration/03f975933ad1410ec05a5326861bff5c/enqueue'
   BlackoutWindowDay:
     Type: String
     Default: 7
