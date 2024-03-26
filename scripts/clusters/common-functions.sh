@@ -64,14 +64,13 @@ function save_secret_string() {
             aws secretsmanager create-secret --output json --name "$final_name" --description "$desc" --secret-string "$str" --add-replica-regions Region="$AWS_BACKUP_REGION"
         else
             aws secretsmanager put-secret-value --output json --secret-id "$final_name" --secret-string "$str"
-
+            aws secretsmanager replicate-secret-to-regions --secret-id "$final_name" --add-replica-regions Region="$AWS_BACKUP_REGION"
         fi
     else 
         if [ -z "$secret" ] || [ "$secret" == "null" ]; then
             aws secretsmanager create-secret --output json --name "$final_name" --description "$desc" --secret-string "$str"
         else
             aws secretsmanager put-secret-value --output json --secret-id "$final_name" --secret-string "$str"
-
         fi
     fi
 }

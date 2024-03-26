@@ -1,0 +1,6 @@
+**/config.sh
+**/config.*.sh
+**/environment.sh
+**/environment.*.sh
+**/id_rsa
+**/id_rsa.pub

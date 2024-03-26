@@ -28,6 +28,21 @@ and they will be filled by the scripts automatically.
 the `ACC_ID` string mentioned aboved.
 5. Navigate to the CloudFormation tab in the AWS console to ensure that your stack is being spun up.
 
+## Run the regions setup script
+
+**NOTE:** This should only be run once per region.
+
+1. Under `./scripts/regions`, copy the `config.sh.off` file to `config.REGION.sh`, replacing `REGION` with a string
+representing an identifier for the REGION. For example, if the client plans to create clusters in us-west-2, then you can name 
+the file `config.us-west-2.sh`. If there's a single `REGION`, 
+you can leave it empty (`config.sh`).
+2. Open the config file and fill the properties appropiately. You can leave the ones that are auto-generated empty 
+and they will be filled by the scripts automatically.
+3. AWS_PROFILE should be the AWS profile used to access the resources of the AWS account of the client. It can be setup with `aws --profile CLIENT_PROFILE configure`
+4. Run `./scripts/regions/setup.sh` and follow the instructions. When being asked for the config.sh suffix, provide
+the `REGION` string mentioned aboved.
+5. Navigate to the CloudFormation tab and configure it according to the `REGION` on the AWS console. Ensure that your stack creates successfully.
+
 ## Run the Environment Setup Script
 
 **NOTE:** Should only be run once per environment, when creating the first cluster for the config.

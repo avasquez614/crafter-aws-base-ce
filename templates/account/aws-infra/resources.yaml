@@ -85,6 +85,10 @@ Parameters:
     Type: CommaDelimitedList
     Description: Enter the AWS Principal ARNs that are allowed to assume the EKS admin role
 
+  EksCrafterCMSSupportTrustedPrincipals:
+    Type: CommaDelimitedList
+    Description: Enter the AWS Principal ARNs that are allowed to assume the EKS CrafterCMS support role
+
 Conditions:
   IsAllSupported: !Equals
     - !Ref AllSupported
@@ -258,6 +262,101 @@ Resources:
             AWS:
               Ref: EksAdminTrustedPrincipals
           Action: sts:AssumeRole
+      # Minimun IAM policies to run eksctl
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
+        - 'arn:aws:iam::aws:policy/AWSCloudFormationFullAccess'
+      Policies:
+        - PolicyName: EksAllAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: eks:*
+                Resource: "*"
+              - Action:
+                  - 'ssm:GetParameter'
+                  - 'ssm:GetParameters'
+                Resource:
+                  - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/aws/*'
+                  - 'arn:aws:ssm:*::parameter/aws/*'
+                Effect: Allow
+              - Action:
+                  - 'kms:CreateGrant'
+                  - 'kms:DescribeKey'
+                Resource: "*"
+                Effect: Allow
+              - Action:
+                  - 'logs:PutRetentionPolicy'
+                Resource: "*"
+                Effect: Allow
+        - PolicyName: IamLimitedAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'iam:CreateInstanceProfile'
+                  - 'iam:DeleteInstanceProfile'
+                  - 'iam:GetInstanceProfile'
+                  - 'iam:RemoveRoleFromInstanceProfile'
+                  - 'iam:GetRole'
+                  - 'iam:CreateRole'
+                  - 'iam:DeleteRole'
+                  - 'iam:AttachRolePolicy'
+                  - 'iam:PutRolePolicy'
+                  - 'iam:ListInstanceProfiles'
+                  - 'iam:AddRoleToInstanceProfile'
+                  - 'iam:ListInstanceProfilesForRole'
+                  - 'iam:PassRole'
+                  - 'iam:DetachRolePolicy'
+                  - 'iam:DeleteRolePolicy'
+                  - 'iam:GetRolePolicy'
+                  - 'iam:GetOpenIDConnectProvider'
+                  - 'iam:CreateOpenIDConnectProvider'
+                  - 'iam:DeleteOpenIDConnectProvider'
+                  - 'iam:TagOpenIDConnectProvider'
+                  - 'iam:ListAttachedRolePolicies'
+                  - 'iam:TagRole'
+                  - 'iam:GetPolicy'
+                  - 'iam:CreatePolicy'
+                  - 'iam:DeletePolicy'
+                  - 'iam:ListPolicyVersions'
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:instance-profile/eksctl-*'
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/eksctl-*'
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/eksctl-*'
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/*'
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/aws-service-role/eks-nodegroup.amazonaws.com/AWSServiceRoleForAmazonEKSNodegroup'
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/eksctl-managed-*'
+              - Effect: Allow
+                Action:
+                  - 'iam:GetRole'
+                Resource:
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:role/*'
+              - Effect: Allow
+                Action:
+                  - 'iam:CreateServiceLinkedRole'
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    iam:AWSServiceName:
+                      - 'eks.amazonaws.com'
+                      - 'eks-nodegroup.amazonaws.com'
+                      - 'eks-fargate.amazonaws.com'
+
+  EksCrafterCMSSupportRole:
+    Type: AWS::IAM::Role
+    Properties: 
+      RoleName: eks-craftercms-support
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal: 
+            AWS: 
+              Ref: EksCrafterCMSSupportTrustedPrincipals
+          Action: sts:AssumeRole
 
   DefaultDeliveryCloudFrontCachingPolicy:
     Type: AWS::CloudFront::CachePolicy
@@ -287,7 +386,7 @@ Resources:
           CookieBehavior: 'none'
         HeadersConfig: 
           HeaderBehavior: 'whitelist'
-          Headers: ['CloudFront-Forwarded-Proto']
+          Headers: ['CloudFront-Forwarded-Proto', 'Access-Control-Request-Headers', 'Access-Control-Request-Method']
         QueryStringsConfig: 
           QueryStringBehavior: 'all'
 

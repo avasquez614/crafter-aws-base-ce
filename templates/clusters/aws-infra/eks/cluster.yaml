@@ -43,6 +43,9 @@ iam:
         Version: '2012-10-17'
         Statement:
           - Effect: Allow
+            Action: ec2:DescribeLaunchTemplateVersions
+            Resource: "*"
+          - Effect: Allow
             Action: cloudformation:ListStacks
             Resource: "*"
           - Effect: Allow
@@ -59,25 +62,9 @@ iam:
     - metadata:
         name: cloudwatch-addons
         namespace: amazon-cloudwatch
-      attachPolicy:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Action:
-            - 'cloudwatch:PutMetricData'
-            - 'ec2:DescribeVolumes'
-            - 'ec2:DescribeTags'
-            - 'logs:PutLogEvents'
-            - 'logs:DescribeLogStreams'
-            - 'logs:DescribeLogGroups'
-            - 'logs:CreateLogStream'
-            - 'logs:CreateLogGroup'
-            - 'logs:PutRetentionPolicy'
-          Resource: "*"
-        - Effect: Allow
-          Action:
-            - 'ssm:GetParameter'
-          Resource: "arn:aws:ssm:*:*:parameter/AmazonCloudWatch-*"
+      attachPolicyARNs:
+      - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+      - "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
     - metadata:
         name: external-secrets
         namespace: external-secrets
@@ -212,49 +199,6 @@ managedNodeGroups:
     volumeSize: 20
     privateNetworking: true
 
-  # ES workers
-  - name: es-workers-az1-v1
-    tags:
-      # EC2 tags required for cluster-autoscaler auto-discovery
-      k8s.io/cluster-autoscaler/enabled: "true"
-      k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
-    labels:
-      node-type: elasticsearch
-    instanceType: m5.large
-    availabilityZones: ["{{aws_az_1}}"]
-    minSize: 1
-    maxSize: 10
-    volumeSize: 20
-    privateNetworking: true
-
-  - name: es-workers-az2-v1
-    tags:
-      # EC2 tags required for cluster-autoscaler auto-discovery
-      k8s.io/cluster-autoscaler/enabled: "true"
-      k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
-    labels:
-      node-type: elasticsearch
-    instanceType: m5.large
-    availabilityZones: ["{{aws_az_2}}"]
-    minSize: 1
-    maxSize: 10
-    volumeSize: 20
-    privateNetworking: true
-
-  - name: es-workers-az3-v1
-    tags:
-      # EC2 tags required for cluster-autoscaler auto-discovery
-      k8s.io/cluster-autoscaler/enabled: "true"
-      k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
-    labels:
-      node-type: elasticsearch
-    instanceType: m5.large
-    availabilityZones: ["{{aws_az_3}}"]
-    minSize: 1
-    maxSize: 10
-    volumeSize: 20
-    privateNetworking: true
-
   # Authoring workers
   - name: authoring-workers-az1-v1
     tags:
@@ -263,6 +207,11 @@ managedNodeGroups:
       k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
     labels:
       node-type: authoring
+      monitored: "true"
+    taints:
+      - key: kind
+        value: crafterworkload
+        effect: NoExecute
     instanceType: {{authoring_worker_instance_type}}
     availabilityZones: ["{{aws_az_1}}"]
     minSize: 1
@@ -278,6 +227,11 @@ managedNodeGroups:
       k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
     labels:
       node-type: delivery
+      monitored: "true"
+    taints:
+      - key: kind
+        value: crafterworkload
+        effect: NoExecute
     instanceType: {{delivery_worker_instance_type}}
     minSize: {{delivery_instance_count}}
     maxSize: 20

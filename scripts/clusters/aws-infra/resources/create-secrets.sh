@@ -53,8 +53,8 @@ if [ "$GENERATE_GIT_HTTPS_SERVER_SECRETS" == "true" ]; then
 
         cecho "Generating Git HTTPS Server SSL cert..."
 
-        # Generate certs for 5 years
-        openssl req -x509 -nodes -days 1825 -newkey rsa:2048 -keyout "$temp_dir/tls.key" -out "$temp_dir/tls.crt"
+        # Generate certs for 10 years
+        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout "$temp_dir/tls.key" -out "$temp_dir/tls.crt" -subj "/C=US/ST=Virginia/L=McLean/O=CrafterCMS/OU=Cloud Ops/CN=$GIT_HTTPS_SERVER_DOMAIN_NAME/emailAddress=cloud-ops@craftercms.com"
 
         GIT_HTTPS_SERVER_SSL_CERT=`cat "$temp_dir/tls.crt"`
         update_var_with_file_content 'GIT_HTTPS_SERVER_SSL_CERT' "$temp_dir/tls.crt"

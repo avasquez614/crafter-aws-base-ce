@@ -12,6 +12,7 @@ metadata:
     alb.ingress.kubernetes.io/healthcheck-path: /studio/api/2/monitoring/status.json?token={{crafter_management_token}}
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=600
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
     # # Uncomment after generating the SSL cert and validating it
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     # alb.ingress.kubernetes.io/ssl-redirect: '443'
@@ -121,10 +122,12 @@ spec:
         fsGroupChangePolicy: "OnRootMismatch"
       nodeSelector:
         node-type: authoring
+      tolerations:
+        - key: kind
+          operator: Equal
+          effect: NoExecute
+          value: crafterworkload
       volumes:
-        - name: es-certs
-          secret:
-            secretName: elasticsearch-es-http-certs-public
         # # Uncomment on multi-region (main region)
         # - name: git-https-server-cert
         #   secret:
@@ -193,10 +196,6 @@ spec:
           ports:
             - containerPort: 8080
           volumeMounts:
-            - name: es-certs
-              subPath: tls.crt
-              mountPath: /opt/crafter/trusted-certs/es-tls.crt
-              readOnly: true
             - name: gitconfig
               subPath: .gitconfig
               mountPath: /home/crafter/.gitconfig
@@ -246,15 +245,15 @@ spec:
               value: '200'
             - name: S3_BUCKET_NAME_PREFIX
               value: "{{s3_current_region_bucket_name_prefix}}"
-            - name: ES_USERNAME
-              value: elastic
-            - name: ES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elasticsearch-es-elastic-user
-                  key: elastic
-            - name: ES_URL
-              value: "https://elasticsearch-es-http:9200"
+            # - name: SEARCH_USERNAME
+            #   value: elastic
+            # - name: SEARCH_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: elasticsearch-es-elastic-user
+            #       key: elastic
+            - name: SEARCH_URL
+              value: "{{opensearch_url}}"
             - name: MAIL_ADDRESS
               value: "{{mail_address}}"
             - name: MAIL_HOST
@@ -338,10 +337,6 @@ spec:
           ports:
             - containerPort: 9191
           volumeMounts:
-            - name: es-certs
-              subPath: tls.crt
-              mountPath: /opt/crafter/trusted-certs/es-tls.crt
-              readOnly: true
             - name: gitconfig
               subPath: .gitconfig
               mountPath: /home/crafter/.gitconfig
@@ -422,21 +417,25 @@ spec:
               value: "{{disable_cloudformation_deletion_on_target_deletion}}"                                            
             - name: DEPLOYER_JAVA_OPTS
               value: "-server -Xss1024K -Xms1G -XX:MaxRAMPercentage=75.0"
-            - name: ES_USERNAME
-              value: elastic
-            - name: ES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elasticsearch-es-elastic-user
-                  key: elastic
-            - name: ES_URL
-              value: "https://elasticsearch-es-http:9200"
-            - name: ES_CONNECT_TIMEOUT
+            # - name: SEARCH_USERNAME
+            #   value: elastic
+            # - name: SEARCH_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: elasticsearch-es-elastic-user
+            #       key: elastic
+            - name: SEARCH_URL
+              value: "{{opensearch_url}}"
+            - name: SEARCH_CONNECT_TIMEOUT
               # 10 secs
               value: "10000"
-            - name: ES_SOCKET_TIMEOUT
+            - name: SEARCH_SOCKET_TIMEOUT
               # 30 minutes
               value: "1800000"
+            - name: STUDIO_URL
+              value: "http://localhost:8080/studio"
+            - name: STUDIO_MANAGEMENT_TOKEN
+              value: "{{crafter_management_token}}"
             - name: ENGINE_MANAGEMENT_TOKEN
               value: "{{crafter_management_token}}"
             - name: DEPLOYER_MANAGEMENT_TOKEN
@@ -529,6 +528,13 @@ spec:
           volumeMounts:
             - name: logs
               mountPath: /opt/crafter/logs
+          resources:
+            requests:
+              cpu: 10m
+              memory: 25Mi
+            limits:
+              cpu: 20m
+              memory: 50Mi
           env:
             - name: CRON_SCHEDULE
               # Every hour

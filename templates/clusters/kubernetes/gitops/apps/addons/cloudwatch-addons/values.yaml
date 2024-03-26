@@ -7,11 +7,15 @@ cwagent:
   serviceAccount:
     create: false
     name: cloudwatch-addons
+  nodeSelector:
+    monitored: "true"
 fluentBit:
   logRetentionDays: 30
   serviceAccount:
     create: false
     name: cloudwatch-addons
+  nodeSelector:
+    monitored: "true"
 prometheus:
   serviceAccount:
     create: false

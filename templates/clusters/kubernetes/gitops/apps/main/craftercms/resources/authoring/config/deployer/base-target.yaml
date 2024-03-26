@@ -41,17 +41,17 @@ target:
       # The cron expression used for scheduling target deployments
       cron: ${env:SCHEDULED_DEPLOYMENTS_CRON}
   search:
-    elasticsearch:
+    openSearch:
       # Single Cluster
       urls:
-        - ${env:ES_URL}
-      username: ${env:ES_USERNAME}
-      password: ${env:ES_PASSWORD}
+        - ${env:SEARCH_URL}
+      username: ${env:SEARCH_USERNAME}
+      password: ${env:SEARCH_PASSWORD}
       timeout:
         # The connection timeout in milliseconds, if set to -1 the default will be used
-        connect: ${env:ES_CONNECT_TIMEOUT}
+        connect: ${env:SEARCH_CONNECT_TIMEOUT}
         # The socket timeout in milliseconds, if set to -1 the default will be used
-        socket: ${env:ES_SOCKET_TIMEOUT}
+        socket: ${env:SEARCH_SOCKET_TIMEOUT}
       # The number of threads to use, if set to -1 the default will be used
       threads: -1
       # Indicates if keep alive should be enabled for sockets used by the search client, defaults to false

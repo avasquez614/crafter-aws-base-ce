@@ -1,0 +1,9 @@
+# RENAME THIS FILE TO config.sh BEFORE RUNNING setup.sh, and uncomment the properties 
+# !!! NEVER COMMIT THIS FILE IF YOU HAVE ALREADY EDITED THE PROPERTIES. YOU WILL BE COMMITING SENSITIVE DATA !!!
+# Enter here config for scripts
+# -----------------------------
+
+# Required
+export REGION=
+# Required
+export AWS_PROFILE=

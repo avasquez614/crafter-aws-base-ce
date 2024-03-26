@@ -1,0 +1,351 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Healthchecks for {{aws_region}} endpoints in the {{cluster_name}} cluster
+
+Parameters:
+  AuthoringHealthcheckHostname:
+    Type: String
+  AuthoringHealthcheckPath:
+    Type: String
+  DeliveryHealthcheckHostname:
+    Type: String
+  DeliveryHealthcheckPath:
+    Type: String
+  HealthcheckRequestInterval:
+    Type: String
+    Default: 30
+    AllowedValues:
+      - 30
+      - 10
+  HealthcheckFailureThreshold:
+    Type: String
+    Default: 3
+  AlarmsSlackChannelHookUrl:
+    Type: String
+    Default: 'https://hooks.slack.com/services/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'
+  PagerDutyIntegrationUrl:
+    Type: String
+    Default: 'https://events.pagerduty.com/integration/03f975933ad1410ec05a5326861bff5c/enqueue'
+  BlackoutWindowDay:
+    Type: String
+    Default: 7
+    AllowedValues:
+      - 1
+      - 2
+      - 3
+      - 4
+      - 5
+      - 6
+      - 7
+  BlackoutWindowStartHour:
+    Type: String
+    Default: 14
+  BlackoutWindowEndHour:
+    Type: String
+    Default: 16
+
+Resources:
+  AuthoringHealthCheck: 
+    Type: 'AWS::Route53::HealthCheck'
+    Properties: 
+      HealthCheckConfig: 
+        Port: 443
+        Type: HTTPS
+        FullyQualifiedDomainName: !Ref AuthoringHealthcheckHostname
+        ResourcePath: !Ref AuthoringHealthcheckPath
+        RequestInterval: !Ref HealthcheckRequestInterval
+        FailureThreshold: !Ref HealthcheckFailureThreshold
+      HealthCheckTags: 
+        - Key: Name
+          Value: {{client_id}}/{{cluster_name}}/{{aws_region}}/authoring-healthcheck
+
+  DeliveryHealthCheck: 
+    Type: 'AWS::Route53::HealthCheck'
+    Properties: 
+      HealthCheckConfig: 
+        Port: 443
+        Type: HTTPS
+        FullyQualifiedDomainName: !Ref DeliveryHealthcheckHostname
+        ResourcePath: !Ref DeliveryHealthcheckPath
+        RequestInterval: !Ref HealthcheckRequestInterval
+        FailureThreshold: !Ref HealthcheckFailureThreshold
+      HealthCheckTags: 
+        - Key: Name
+          Value: {{client_id}}/{{cluster_name}}/{{aws_region}}/delivery-healthcheck
+
+  AuthoringHealthcheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: {{client_id}}/{{cluster_name}}/{{aws_region}}/authoring-healthcheck
+      AlarmDescription: Authoring in {{client_id}}/{{cluster_name}}/{{aws_region}} is unhealthy
+      Metrics:
+        - Expression: !Sub "IF((DAY(m1) == ${BlackoutWindowDay} AND (HOUR(m1) >= ${BlackoutWindowStartHour} AND HOUR(m1) <= ${BlackoutWindowEndHour})), 1, m1)"
+          Id: e1
+          Period: '60'
+          ReturnData: True
+        - Id: m1
+          ReturnData: False
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: HealthCheckId
+                  Value: !Ref AuthoringHealthCheck
+              MetricName: HealthCheckStatus
+              Namespace: AWS/Route53
+            Period: '60'
+            Stat: Minimum
+      EvaluationPeriods: '1'
+      ComparisonOperator: LessThanThreshold
+      Threshold: '1.0'
+      TreatMissingData: "breaching"
+      AlarmActions:
+        - !Ref HealthCheckSlackSNSTopic
+        - !Ref HealthCheckPagerDutySNSTopic
+      OKActions:
+        - !Ref HealthCheckSlackSNSTopic
+        - !Ref HealthCheckPagerDutySNSTopic
+
+  DeliveryHealthcheckAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: {{client_id}}/{{cluster_name}}/{{aws_region}}/delivery-healthcheck
+      AlarmDescription: Delivery in {{client_id}}/{{cluster_name}}/{{aws_region}} is unhealthy
+      Metrics:
+        - Expression: !Sub "IF((DAY(m1) == ${BlackoutWindowDay} AND (HOUR(m1) >= ${BlackoutWindowStartHour} AND HOUR(m1) <= ${BlackoutWindowEndHour})), 1, m1)"
+          Id: e1
+          Period: '60'
+          ReturnData: True
+        - Id: m1
+          ReturnData: False
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: HealthCheckId
+                  Value: !Ref DeliveryHealthCheck
+              MetricName: HealthCheckStatus
+              Namespace: AWS/Route53
+            Period: '60'
+            Stat: Minimum
+      EvaluationPeriods: '1'
+      ComparisonOperator: LessThanThreshold
+      Threshold: '1.0'
+      TreatMissingData: "breaching"
+      AlarmActions:
+        - !Ref HealthCheckSlackSNSTopic
+        - !Ref HealthCheckPagerDutySNSTopic
+      OKActions:
+        - !Ref HealthCheckSlackSNSTopic
+        - !Ref HealthCheckPagerDutySNSTopic
+
+  HealthCheckPagerDutySNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: "{{cluster_name}}-HealthCheckPagerDutySNSTopic"
+  
+  HealthCheckPagerDutySubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      RawMessageDelivery: False
+      TopicArn: !GetAtt HealthCheckPagerDutySNSTopic.TopicArn
+      Protocol: HTTPS
+      Endpoint: !Ref PagerDutyIntegrationUrl
+
+  SendCWAlarmsToSlackLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: lambda.amazonaws.com
+      Policies:
+        - PolicyName: SendCWAlarmsToSlackLambdaPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+          
+  SendCWAlarmsToSlackLambdaFunctionInvokePermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref SendCWAlarmsToSlackLambda
+      Principal: sns.amazonaws.com
+
+  SendCWAlarmsToSlackLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.9
+      Role: !GetAtt SendCWAlarmsToSlackLambdaRole.Arn
+      Handler: index.handler
+      Timeout: 30
+      Environment:
+        Variables:
+          slackUrl: !Ref AlarmsSlackChannelHookUrl        
+      Code:
+        ZipFile: |
+          import urllib3
+          import json
+          import os
+
+          slack_url = os.environ['slackUrl']
+          http = urllib3.PoolManager()
+
+          def get_alarm_attributes(sns_message):
+              alarm = dict()
+
+              alarm['name'] = sns_message['AlarmName']
+              alarm['description'] = sns_message['AlarmDescription']
+              alarm['reason'] = sns_message['NewStateReason']
+              alarm['region'] = sns_message['Region']
+              alarm['instance_id'] = sns_message['Trigger']['Metrics'][1]['MetricStat']['Metric']['Dimensions'][0]['value']
+              alarm['state'] = sns_message['NewStateValue']
+              alarm['previous_state'] = sns_message['OldStateValue']
+
+              return alarm
+
+          def notify_insufficient_data(alarm):
+              return {
+                  "type": "home",
+                  "blocks": [
+                      {
+                          "type": "header",
+                          "text": {
+                              "type": "plain_text",
+                              "text": ":warning: INSUFFICIENT_DATA: " + alarm['name']
+                          }
+                      },
+                      {
+                          "type": "divider"
+                      },
+                      {
+                          "type": "section",
+                          "text": {
+                              "type": "mrkdwn",
+                              "text": "_" + alarm['description'] + "_"
+                          },
+                          "block_id": "text1"
+                      },
+                      {
+                          "type": "divider"
+                      },
+                      {
+                          "type": "context",
+                          "elements": [
+                              {
+                                  "type": "mrkdwn",
+                                  "text": "Region: *" + alarm['region'] + "*"
+                              }
+                          ]
+                      }
+                  ]
+              }
+
+          def notify_alarm(alarm):
+              return {
+                  "type": "home",
+                  "blocks": [
+                      {
+                          "type": "header",
+                          "text": {
+                              "type": "plain_text",
+                              "text": ":red_circle: ALARM: " + alarm['name']
+                          }
+                      },
+                      {
+                          "type": "divider"
+                      },
+                      {
+                          "type": "section",
+                          "text": {
+                              "type": "mrkdwn",
+                              "text": "_" + alarm['reason'] + "_"
+                          },
+                          "block_id": "text1"
+                      },
+                      {
+                          "type": "divider"
+                      },
+                      {
+                          "type": "context",
+                          "elements": [
+                              {
+                                  "type": "mrkdwn",
+                                  "text": "Region: *" + alarm['region'] + "*"
+                              }
+                          ]
+                      }
+                  ]
+              }
+
+          def notify_ok(alarm):
+              return {
+                  "type": "home",
+                  "blocks": [
+                      {
+                          "type": "header",
+                          "text": {
+                              "type": "plain_text",
+                              "text": ":large_green_circle: OK: " + alarm['name']
+                          }
+                      },
+                      {
+                          "type": "divider"
+                      },
+                      {
+                          "type": "section",
+                          "text": {
+                              "type": "mrkdwn",
+                              "text": "_" + alarm['reason'] + "_"
+                          },
+                          "block_id": "text1"
+                      },
+                      {
+                          "type": "divider"
+                      },
+                      {
+                          "type": "context",
+                          "elements": [
+                              {
+                                  "type": "mrkdwn",
+                                  "text": "Region: *" + alarm['region'] + "*"
+                              }
+                          ]
+                      }
+                  ]
+              }
+
+          def handler(event, context):
+              sns_message = json.loads(event["Records"][0]["Sns"]["Message"])
+              alarm = get_alarm_attributes(sns_message)
+
+              msg = str()
+
+              if alarm['state'] == 'INSUFFICIENT_DATA':
+                  msg = notify_insufficient_data(alarm)
+              elif alarm['state'] == 'ALARM':
+                  msg = notify_alarm(alarm)
+              elif alarm['state'] == 'OK':
+                  msg = notify_ok(alarm)
+
+              encoded_msg = json.dumps(msg).encode("utf-8")
+              resp = http.request("POST", slack_url, body=encoded_msg)
+              print(
+                  {
+                      "message": msg,
+                      "status_code": resp.status,
+                      "response": resp.data,
+                  }
+              )
+
+  HealthCheckSlackSNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt SendCWAlarmsToSlackLambda.Arn

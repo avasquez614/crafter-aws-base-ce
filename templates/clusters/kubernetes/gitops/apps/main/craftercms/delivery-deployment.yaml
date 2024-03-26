@@ -22,6 +22,7 @@ metadata:
       {"type":"forward","forwardConfig":{"targetGroups":[{"serviceName":"delivery-service","servicePort":"8080"}]}}
     alb.ingress.kubernetes.io/actions.block-request: >
       {"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"403","messageBody":"403 External access to endpoint not allowed"}}
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
     # # Uncomment after generating the SSL cert and validating it
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     # alb.ingress.kubernetes.io/ssl-redirect: '443'
@@ -101,7 +102,7 @@ spec:
       targetPort: 8080
 ---
 # Delivery Pod Disruption Budget
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: delivery-pdb
@@ -136,10 +137,12 @@ spec:
         fsGroup: 1000
       nodeSelector:
         node-type: delivery
+      tolerations:
+        - key: kind
+          operator: Equal
+          effect: NoExecute
+          value: crafterworkload
       volumes:
-        - name: es-certs
-          secret:
-            secretName: elasticsearch-es-http-certs-public     
         - name: config-encryption-key-salt
           secret:
             secretName: config-encryption-key-salt
@@ -189,11 +192,7 @@ spec:
               memory: {{delivery_tomcat_container_max_memory}}
           ports:
             - containerPort: 8080
-          volumeMounts:
-            - name: es-certs
-              subPath: tls.crt
-              mountPath: /opt/crafter/trusted-certs/es-tls.crt
-              readOnly: true          
+          volumeMounts:       
             - name: crafter-license
               subPath: crafter.lic
               mountPath: /opt/crafter/bin/apache-tomcat/shared/classes/crafter/license/crafter.lic
@@ -228,15 +227,15 @@ spec:
               value: "{{s3_current_region_bucket_name_prefix}}"
             - name: S3_BUCKET_ROOT_PATH
               value: "{{s3_current_region_bucket_name_prefix}}-site-{siteName}/{{environment_version}}"
-            - name: ES_USERNAME
-              value: elastic
-            - name: ES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: elasticsearch-es-elastic-user
-                  key: elastic
-            - name: ES_URL
-              value: "https://elasticsearch-es-http:9200"
+            # - name: SEARCH_USERNAME
+            #   value: elastic
+            # - name: SEARCH_PASSWORD
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: elasticsearch-es-elastic-user
+            #       key: elastic
+            - name: SEARCH_URL
+              value: "{{opensearch_url}}"
             - name: ENGINE_MANAGEMENT_TOKEN
               value: "{{crafter_management_token}}"
             - name: CRAFTER_ENCRYPTION_KEY
@@ -258,6 +257,13 @@ spec:
           volumeMounts:
             - name: logs
               mountPath: /opt/crafter/logs
+          resources:
+            requests:
+              cpu: 10m
+              memory: 25Mi
+            limits:
+              cpu: 20m
+              memory: 50Mi
           env:
             - name: CRON_SCHEDULE
               # Every hour

@@ -3,15 +3,15 @@ kind: Kustomization
 namespace: craftercms
 images:
   - name: craftercms/authoring_tomcat
-    newTag: '4.0.3E'
+    newTag: '4.1.2E'
   - name: craftercms/deployer
-    newTag: '4.0.3E'
+    newTag: '4.1.2E'
   - name: craftercms/delivery_tomcat
-    newTag: '4.0.3E'
+    newTag: '4.1.2E'
   - name: craftercms/git_https_server
-    newTag: '4.0.3E'
+    newTag: '4.1.2E'
   - name: craftercms/logrotate
-    newTag: '4.0.3E'
+    newTag: '4.1.2E'
 resources:
   - external-secrets/mail-user-credentials.yaml
   - external-secrets/config-encryption-key-salt.yaml
@@ -19,9 +19,6 @@ resources:
   # Uncomment on multi-region
   # - external-secrets/git-https-server-credentials.yaml
   # - external-secrets/git-https-server-ssl-cert.yaml
-  # Uncomment if restoring from a backup
-  # - elasticsearch-pv.yaml
-  - elasticsearch.yaml
   # Uncomment if restoring from a backup
   # - authoring-pv.yaml
   - authoring-deployment.yaml

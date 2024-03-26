@@ -8,13 +8,13 @@ export ENVIRONMENT=default
 # Required
 export ENVIRONMENT_VERSION=v1
 # Required
-export EKS_VERSION=1.23
+export EKS_VERSION=1.29
 # Required
-export EKSCTL_VERSION=
+export EKSCTL_VERSION=v0.171.0
+# Required (use versions specified in https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
+export KUBECTL_VERSION=v1.29.0
 # Required
-export KUBECTL_VERSION=
-# Required
-export K9S_VERSION=
+export K9S_VERSION=v0.31.9
 # Required (default 9am EDT)
 export UPGRADE_NODES_CRON_UTC='0 13 * * 0'
 # Leave always empty
@@ -38,9 +38,10 @@ export AWS_BACKUP_REGION=
 # Optional, specify for multi-region delivery
 export AWS_MAIN_CLUSTER_REGION=
 # Required. Authoring worker groups can be also used for standalone deployers
-export AUTHORING_WORKER_INSTANCE_TYPE=m5.xlarge
+export AUTHORING_WORKER_INSTANCE_TYPE=m6i.xlarge
 # Required
-export DELIVERY_WORKER_INSTANCE_TYPE=m5.xlarge
+export DELIVERY_WORKER_INSTANCE_TYPE=m6i.xlarge
+# Required. For PROD set to '5 minutes'; for NON-PROD set to '10 minutes'
 # Required
 export AUTHORING_TOMCAT_CONTAINER_MIN_CPU=2
 # Required. Should match the number of Authoring license cores
@@ -86,7 +87,7 @@ export VPC_CIDR=10.1.0.0/16
 # Required (use HighlyAvailable for Prod envs, Single for other envs like QA and Dev)
 export NAT_GATEWAY_MODE=Single
 # Required (normally the VPN from where you're going to access the cluster with kubectl and SSH)
-export CLUSTER_PUBLIC_ACCESS_CIDRS=
+export CLUSTER_PUBLIC_ACCESS_CIDRS=35.173.5.193/32,52.34.238.137/32
 # Required (use a no more than 5 letters acronym if possible)
 export CLIENT_ID=
 # Required
@@ -158,7 +159,15 @@ export GIT_HTTPS_SERVER_SSL_KEY=
 export GIT_HTTPS_SERVER_USERNAME=
 # Empty to auto-generate, auto-generated only when GENERATE_GIT_HTTPS_SERVER_SECRETS is true
 export GIT_HTTPS_SERVER_PASSWORD=
-# Required in supplementary regions
-export GIT_HTTPS_SERVER_REPOS_URL=
+# Required if GENERATE_GIT_HTTPS_SERVER_SECRETS = true
+export GIT_HTTPS_SERVER_DOMAIN_NAME=
+# Required in supplementary regions, if GENERATE_GIT_HTTPS_SERVER_SECRETS = true
+export GIT_HTTPS_SERVER_REPOS_URL=https://$GIT_HTTPS_SERVER_DOMAIN_NAME/repos/sites
+# Required
+export AUTHORING_DOMAIN_NAME=
 # Required
 export DELIVERY_DOMAIN_NAME=
+# Required. Add token= (with no value) to dynamically add a Crafter management token parameter
+export AUTHORING_HEALTHCHECK_PATH='/studio/api/2/monitoring/status.json?token='
+# Required. Add token= (with no value) to dynamically add a Crafter management token parameter
+export DELIVERY_HEALTHCHECK_PATH='/api/1/monitoring/status.json?token='

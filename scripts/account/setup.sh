@@ -30,7 +30,8 @@ if [ -z "$resources_stack" ] || [ "$resources_stack" == "null" ]; then
         --capabilities CAPABILITY_NAMED_IAM \
         --template-body file://$RESOURCES_STACK_CONFIG_FILE --parameters \
         ParameterKey=CloudFrontNotificationsEmailAddress,ParameterValue="$CLOUDFRONT_NOTIFICATIONS_EMAIL_ADDRESS" \
-        ParameterKey=EksAdminTrustedPrincipals,ParameterValue="arn:aws:iam::$AWS_ACCOUNT_ID:root"
+        ParameterKey=EksAdminTrustedPrincipals,ParameterValue="arn:aws:iam::$AWS_ACCOUNT_ID:root" \
+        ParameterKey=EksCrafterCMSSupportTrustedPrincipals,ParameterValue="arn:aws:iam::$AWS_ACCOUNT_ID:root"
 
     echo "Waiting for account resources stack to be created..."
 

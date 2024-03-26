@@ -110,7 +110,7 @@ Parameters:
     Default: '88a5eaf4-2fd4-4709-b370-b4c650ea3fcf'
   S3OriginResponseHeadersPolicyId:
     Type: String
-    Default: '{{default_static_assets_cloudfront_response_headers_policy_id}'
+    Default: '{{default_static_assets_cloudfront_response_headers_policy_id}}'
   S3OriginCacheBehaviorAllowedMethods:
     Type: CommaDelimitedList
     Default: 'HEAD,GET'

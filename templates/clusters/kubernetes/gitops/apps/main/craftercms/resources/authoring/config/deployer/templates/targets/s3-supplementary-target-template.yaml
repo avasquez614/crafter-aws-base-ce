@@ -19,11 +19,11 @@ target:
   env: {{env}}
   siteName: {{site_name}}
   localRepoPath: {{local_repo_path}}
-  {{#if elastic_search_url}}
+  {{#if opensearch_url}}
   search:
-    elasticsearch:
+    openSearch:
       urls:
-        - {{elastic_search_url}}
+        - {{opensearch_url}}
   {{/if}}
   lifecycleHooks:
     create:
