@@ -23,8 +23,6 @@ if [ -z "$resources_stack" ] || [ "$resources_stack" == "null" ]; then
     private_subnet_ids=$(echo $eks_stack | jq -r '.Outputs[] | select(.OutputKey=="SubnetsPrivate").OutputValue')
     private_route_table_ids=$(aws ec2 describe-route-tables --region $AWS_DEFAULT_REGION --filters "Name=vpc-id,Values=$vpc_id" "Name=tag:Name,Values=eksctl-${CLUSTER_NAME}-cluster/Private*" | jq -r '.RouteTables[].RouteTableId' | paste -s -d, -)
     cluster_security_group=$(echo $eks_stack | jq -r '.Outputs[] | select(.OutputKey=="ClusterSecurityGroupId").OutputValue')
-    s3_canary_bucket_name=$(echo $env_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="S3CanaryBucketName").OutputValue')
-    s3_canary_bucket_lambda_role_arn=$(echo $env_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="S3CanaryBucketLambdaRoleArn").OutputValue')
 
     aws cloudformation create-stack --stack-name $RESOURCES_STACK_NAME --capabilities CAPABILITY_NAMED_IAM \
         --template-body file://$RESOURCES_STACK_CONFIG_FILE --parameters \
@@ -36,7 +34,8 @@ if [ -z "$resources_stack" ] || [ "$resources_stack" == "null" ]; then
         ParameterKey=BackupRegionBucketNamePrefix,ParameterValue=$S3_BACKUP_REGION_BUCKET_NAME_PREFIX \
         ParameterKey=DeliveryInstanceCount,ParameterValue=$DELIVERY_INSTANCE_COUNT \
         ParameterKey=CloudWatchAlarmsEnabled,ParameterValue=$ENABLE_CLOUDWATCH_ALARMS \
-        ParameterKey=AlarmsEmailAddress,ParameterValue=$ALARMS_EMAIL_ADDRESS
+        ParameterKey=AlarmsEmailAddress,ParameterValue=$ALARMS_EMAIL_ADDRESS \
+        ParameterKey=AlarmsSlackChannelHookUrl,ParameterValue=$ALARMS_SLACK_CHANNEL_HOOK_URL
 
     cecho "Waiting for resources stack to be created..." "info"
 
@@ -53,14 +52,19 @@ if [ -z "$healthchecks_stack" ] || [ "$healthchecks_stack" == "null" ]; then
             ParameterKey=AuthoringHealthcheckHostname,ParameterValue=$AUTHORING_DOMAIN_NAME \
             ParameterKey=AuthoringHealthcheckPath,ParameterValue=${AUTHORING_HEALTHCHECK_PATH/token=/"token=$CRAFTER_MANAGEMENT_TOKEN"} \
             ParameterKey=DeliveryHealthcheckHostname,ParameterValue=$DELIVERY_DOMAIN_NAME \
-            ParameterKey=DeliveryHealthcheckPath,ParameterValue=${DELIVERY_HEALTHCHECK_PATH/token=/"token=$CRAFTER_MANAGEMENT_TOKEN"}
+            ParameterKey=DeliveryHealthcheckPath,ParameterValue=${DELIVERY_HEALTHCHECK_PATH/token=/"token=$CRAFTER_MANAGEMENT_TOKEN"} \
+            ParameterKey=AlarmsSlackChannelHookUrl,ParameterValue=$ALARMS_SLACK_CHANNEL_HOOK_URL \
+            ParameterKey=PagerDutyIntegrationUrl,ParameterValue=$PAGER_DUTY_INTEGRATION_URL
+
     else
         aws cloudformation create-stack --region 'us-east-1' --stack-name $HEALTHCHECKS_STACK_NAME \
             --capabilities CAPABILITY_NAMED_IAM --template-body file://$HEALTHCHECKS_STACK_CONFIG_FILE --parameters \
             ParameterKey=AuthoringHealthcheckHostname,ParameterValue=$AUTHORING_DOMAIN_NAME \
             ParameterKey=AuthoringHealthcheckPath,ParameterValue=${AUTHORING_HEALTHCHECK_PATH/token=/"token=$CRAFTER_MANAGEMENT_TOKEN"} \
             ParameterKey=DeliveryHealthcheckHostname,ParameterValue=$DELIVERY_DOMAIN_NAME \
-            ParameterKey=DeliveryHealthcheckPath,ParameterValue=${DELIVERY_HEALTHCHECK_PATH/token=/"token=$CRAFTER_MANAGEMENT_TOKEN"}  
+            ParameterKey=DeliveryHealthcheckPath,ParameterValue=${DELIVERY_HEALTHCHECK_PATH/token=/"token=$CRAFTER_MANAGEMENT_TOKEN"} \
+            ParameterKey=AlarmsSlackChannelHookUrl,ParameterValue=$ALARMS_SLACK_CHANNEL_HOOK_URL \
+            ParameterKey=PagerDutyIntegrationUrl,ParameterValue=$PAGER_DUTY_INTEGRATION_URL
     fi
 
     cecho "Waiting for resources stack to be created..." "info"

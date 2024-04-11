@@ -171,3 +171,7 @@ export DELIVERY_DOMAIN_NAME=
 export AUTHORING_HEALTHCHECK_PATH='/studio/api/2/monitoring/status.json?token='
 # Required. Add token= (with no value) to dynamically add a Crafter management token parameter
 export DELIVERY_HEALTHCHECK_PATH='/api/1/monitoring/status.json?token='
+# Required
+export ALARMS_SLACK_CHANNEL_HOOK_URL=
+# Required
+export PAGER_DUTY_INTEGRATION_URL=

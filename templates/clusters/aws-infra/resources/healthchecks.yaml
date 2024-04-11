@@ -4,8 +4,10 @@ Description: Healthchecks for {{aws_region}} endpoints in the {{cluster_name}} c
 Parameters:
   AuthoringHealthcheckHostname:
     Type: String
+    Default: ''
   AuthoringHealthcheckPath:
     Type: String
+    Default: ''
   DeliveryHealthcheckHostname:
     Type: String
   DeliveryHealthcheckPath:
@@ -21,10 +23,8 @@ Parameters:
     Default: 3
   AlarmsSlackChannelHookUrl:
     Type: String
-    Default: 'https://hooks.slack.com/services/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'
   PagerDutyIntegrationUrl:
     Type: String
-    Default: 'https://events.pagerduty.com/integration/03f975933ad1410ec05a5326861bff5c/enqueue'
   BlackoutWindowDay:
     Type: String
     Default: 7
@@ -38,14 +38,19 @@ Parameters:
       - 7
   BlackoutWindowStartHour:
     Type: String
-    Default: 14
+    Default: 13
   BlackoutWindowEndHour:
     Type: String
-    Default: 16
+    Default: 14
+
+Conditions:
+  AuthoringHealthcheckHostnameSpecified:
+    !Not [!Equals [!Ref AuthoringHealthcheckHostname, '']]
 
 Resources:
   AuthoringHealthCheck: 
     Type: 'AWS::Route53::HealthCheck'
+    Condition: AuthoringHealthcheckHostnameSpecified
     Properties: 
       HealthCheckConfig: 
         Port: 443
@@ -74,6 +79,7 @@ Resources:
 
   AuthoringHealthcheckAlarm:
     Type: AWS::CloudWatch::Alarm
+    Condition: AuthoringHealthcheckHostnameSpecified
     Properties:
       AlarmName: {{client_id}}/{{cluster_name}}/{{aws_region}}/authoring-healthcheck
       AlarmDescription: Authoring in {{client_id}}/{{cluster_name}}/{{aws_region}} is unhealthy
