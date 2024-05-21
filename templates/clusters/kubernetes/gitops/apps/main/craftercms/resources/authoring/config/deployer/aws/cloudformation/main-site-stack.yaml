@@ -136,6 +136,12 @@ Parameters:
     AllowedValues:
       - true
       - false
+  EnableCloudFrontLogging:
+    Type: String
+    Default: false
+    AllowedValues:
+      - true
+      - false
 
 Conditions:
   IsTestStack:
@@ -164,8 +170,8 @@ Conditions:
     !Not [!Equals [!Ref CloudFrontCertificateArn, '']]
   AlternateCloudFrontDomainNamesSpecified:
     !Not [!Equals [!Join [',', !Ref AlternateCloudFrontDomainNames], '']]
-  EnableCloudFrontLogging:
-    !Not [!Equals [!Ref CloudFrontLoggingS3BucketName, '']]
+  ShouldEnableCloudFrontLoggingBucket:
+    !Equals [true, !Ref EnableCloudFrontLogging]
 
 Resources:
   S3BackupSiteBucket:
@@ -343,7 +349,7 @@ Resources:
           MinimumProtocolVersion: TLSv1.1_2016
         Logging:
           !If
-          - EnableCloudFrontLogging
+          - ShouldEnableCloudFrontLoggingBucket
           - Bucket: !Ref CloudFrontLoggingS3BucketName
             Prefix: !Sub '${EnvironmentVersion}/${SiteName}/'
           - !Ref 'AWS::NoValue'
