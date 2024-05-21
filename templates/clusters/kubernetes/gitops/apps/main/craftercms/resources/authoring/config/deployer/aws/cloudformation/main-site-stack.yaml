@@ -171,7 +171,7 @@ Conditions:
   AlternateCloudFrontDomainNamesSpecified:
     !Not [!Equals [!Join [',', !Ref AlternateCloudFrontDomainNames], '']]
   ShouldEnableCloudFrontLoggingBucket:
-    !Equals [true, !Ref EnableCloudFrontLogging]
+    !And [!Equals [true, !Ref EnableCloudFrontLogging], !Not [!Equals [!Ref CloudFrontLoggingS3BucketName, '']]]
 
 Resources:
   S3BackupSiteBucket:
