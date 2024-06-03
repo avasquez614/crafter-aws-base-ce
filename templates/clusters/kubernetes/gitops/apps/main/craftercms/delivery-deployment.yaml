@@ -218,7 +218,9 @@ spec:
               readOnly: true
           env:
             - name: CRAFTER_ENVIRONMENT
-              value: "{{environment}}"            
+              value: "{{environment}}"
+            - name: ENVIRONMENT_VERSION
+              value: "{{environment_version}}"            
             - name: AWS_DEFAULT_REGION
               value: "{{aws_region}}"
             - name: CATALINA_OPTS
@@ -227,6 +229,19 @@ spec:
               value: "{{s3_current_region_bucket_name_prefix}}"
             - name: S3_BUCKET_ROOT_PATH
               value: "{{s3_current_region_bucket_name_prefix}}-site-{siteName}/{{environment_version}}"
+            # Blob config env variables
+            - name: PREVIEW_BUCKET_NAME_PATTERN
+              value: "$(S3_BUCKET_NAME_PREFIX)-blobs-${siteName}"
+            - name: PREVIEW_BUCKET_PREFIX_PATTERN
+              value: "$(ENVIRONMENT_VERSION)"
+            - name: LIVE_BUCKET_NAME_PATTERN
+              value: "$(S3_BUCKET_NAME_PREFIX)-site-${siteName}"
+            - name: LIVE_BUCKET_PREFIX_PATTERN
+              value: "$(ENVIRONMENT_VERSION)"
+            - name: STAGING_BUCKET_NAME_PATTERN
+              value: "$(S3_BUCKET_NAME_PREFIX)-site-${siteName}-staging"
+            - name: STAGING_BUCKET_PREFIX_PATTERN
+              value: "$(ENVIRONMENT_VERSION)"
             # - name: SEARCH_USERNAME
             #   value: elastic
             # - name: SEARCH_PASSWORD

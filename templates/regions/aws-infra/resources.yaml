@@ -3,15 +3,22 @@ Description: Crafter AWS resources for the region
 Resources:
   GuardDutyDetector:  
     Type: AWS::GuardDuty::Detector
-    Properties: 
-      DataSources: 
-        Kubernetes:
-          AuditLogs: 
-            Enable: true
-        MalwareProtection: 
-          ScanEc2InstanceWithFindings:
-            EbsVolumes: true
-        S3Logs:
-          Enable: true
+    Properties:
       Enable: true
+      Features: 
+        - AdditionalConfiguration: 
+            - Name: EC2_AGENT_MANAGEMENT
+              Status: ENABLED
+            - Name: EKS_ADDON_MANAGEMENT
+              Status: ENABLED
+          Name: RUNTIME_MONITORING
+          Status: ENABLED
+        - Name: S3_DATA_EVENTS
+          Status: ENABLED
+        - Name: EKS_AUDIT_LOGS
+          Status: ENABLED
+        - Name: EBS_MALWARE_PROTECTION
+          Status: ENABLED
+        - Name: RDS_LOGIN_EVENTS
+          Status: ENABLED
       FindingPublishingFrequency: FIFTEEN_MINUTES

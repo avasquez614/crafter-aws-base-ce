@@ -99,7 +99,8 @@ Resources:
               Namespace: AWS/Route53
             Period: '60'
             Stat: Minimum
-      EvaluationPeriods: '1'
+      EvaluationPeriods: '3'
+      DatapointsToAlarm: '2'
       ComparisonOperator: LessThanThreshold
       Threshold: '1.0'
       TreatMissingData: "breaching"
@@ -131,7 +132,8 @@ Resources:
               Namespace: AWS/Route53
             Period: '60'
             Stat: Minimum
-      EvaluationPeriods: '1'
+      EvaluationPeriods: '3'
+      DatapointsToAlarm: '2'
       ComparisonOperator: LessThanThreshold
       Threshold: '1.0'
       TreatMissingData: "breaching"
@@ -144,8 +146,6 @@ Resources:
 
   HealthCheckPagerDutySNSTopic:
     Type: AWS::SNS::Topic
-    Properties:
-      TopicName: "{{cluster_name}}-HealthCheckPagerDutySNSTopic"
   
   HealthCheckPagerDutySubscription:
     Type: AWS::SNS::Subscription

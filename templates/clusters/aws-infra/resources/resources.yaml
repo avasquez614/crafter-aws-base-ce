@@ -369,7 +369,8 @@ Resources:
               Namespace: ContainerInsights
             Period: '60'
             Stat: Average
-      EvaluationPeriods: '1'
+      EvaluationPeriods: '3'
+      DatapointsToAlarm: '2'
       ComparisonOperator: LessThanThreshold
       Threshold: '1'
       TreatMissingData: "breaching"
@@ -404,7 +405,8 @@ Resources:
               Namespace: ContainerInsights
             Period: '60'
             Stat: Average
-      EvaluationPeriods: '1'
+      EvaluationPeriods: '3'
+      DatapointsToAlarm: '2'
       ComparisonOperator: LessThanThreshold
       Threshold: !Sub "${DeliveryInstanceCount}"
       AlarmActions:
@@ -412,6 +414,80 @@ Resources:
       OKActions:
         - !Ref SlackSNSTopic
       TreatMissingData: "breaching"
+
+  DeliveryTomcatHighMemoryAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: CloudWatchAlarmsEnabled
+    Properties:
+      AlarmName: {{client_id}}/{{cluster_name}}/delivery-tomcat-high-memory
+      AlarmDescription: Delivery tomcat in {{client_id}}/{{cluster_name}} memory usage is > 90%
+      Metrics:
+        - Expression: !Sub "IF((DAY(m1) == ${BlackoutWindowDay} AND (HOUR(m1) >= ${BlackoutWindowStartHour} AND HOUR(m1) <= ${BlackoutWindowEndHour})), 1, m1)"
+          Id: container_memory_utilization_over_container_limit
+          Period: '300'
+          ReturnData: True
+        - Id: m1
+          ReturnData: False
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: Namespace
+                  Value: craftercms
+                - Name: ClusterName
+                  Value: {{cluster_name}}
+                - Name: PodName
+                  Value: delivery
+                - Name: ContainerName
+                  Value: tomcat
+              MetricName: container_memory_utilization_over_container_limit
+              Namespace: ContainerInsights
+            Period: '300'
+            Stat: Average
+      EvaluationPeriods: '1'
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '90'
+      TreatMissingData: "missing"
+      AlarmActions:
+        - !Ref SlackSNSTopic
+      OKActions: 
+        - !Ref SlackSNSTopic
+
+  DeliveryTomcatHighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Condition: CloudWatchAlarmsEnabled
+    Properties:
+      AlarmName: {{client_id}}/{{cluster_name}}/delivery-tomcat-high-cpu
+      AlarmDescription: Delivery tomcat in {{client_id}}/{{cluster_name}} CPU usage is > 90%
+      Metrics:
+        - Expression: !Sub "IF((DAY(m1) == ${BlackoutWindowDay} AND (HOUR(m1) >= ${BlackoutWindowStartHour} AND HOUR(m1) <= ${BlackoutWindowEndHour})), 1, m1)"
+          Id: container_cpu_utilization_over_container_limit
+          Period: '300'
+          ReturnData: True
+        - Id: m1
+          ReturnData: False
+          MetricStat:
+            Metric:
+              Dimensions:
+                - Name: Namespace
+                  Value: craftercms
+                - Name: ClusterName
+                  Value: {{cluster_name}}
+                - Name: PodName
+                  Value: delivery
+                - Name: ContainerName
+                  Value: tomcat
+              MetricName: container_cpu_utilization_over_container_limit
+              Namespace: ContainerInsights
+            Period: '300'
+            Stat: Average
+      EvaluationPeriods: '1'
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '90'
+      TreatMissingData: "missing"
+      AlarmActions:
+        - !Ref SlackSNSTopic
+      OKActions: 
+        - !Ref SlackSNSTopic
 
   AuthoringTomcatHighMemoryAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -436,7 +512,7 @@ Resources:
                 - Name: PodName
                   Value: authoring-0
                 - Name: ContainerName
-                  Value: deployer
+                  Value: tomcat
               MetricName: container_memory_utilization_over_container_limit
               Namespace: ContainerInsights
             Period: '300'
@@ -555,76 +631,6 @@ Resources:
       EvaluationPeriods: '1'
       ComparisonOperator: GreaterThanThreshold
       Threshold: '90'
-      TreatMissingData: "missing"
-      AlarmActions:
-        - !Ref SlackSNSTopic
-      OKActions: 
-        - !Ref SlackSNSTopic
-
-  DeliveryHighMemoryAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: CloudWatchAlarmsEnabled
-    Properties:
-      AlarmName: {{client_id}}/{{cluster_name}}/delivery-high-memory-usage
-      AlarmDescription: Delivery in {{client_id}}/{{cluster_name}} pod memory usage is > 90%
-      Metrics:
-        - Expression: !Sub "IF((DAY(m1) == ${BlackoutWindowDay} AND (HOUR(m1) >= ${BlackoutWindowStartHour} AND HOUR(m1) <= ${BlackoutWindowEndHour})), 1, m1)"
-          Id: pod_memory_utilization_over_pod_limit
-          Period: '300'
-          ReturnData: True
-        - Id: m1
-          ReturnData: False
-          MetricStat:
-            Metric:
-              Dimensions:
-                - Name: Namespace
-                  Value: craftercms
-                - Name: Service
-                  Value: delivery-service
-                - Name: ClusterName
-                  Value: {{cluster_name}}
-              MetricName: pod_memory_utilization_over_pod_limit
-              Namespace: ContainerInsights
-            Period: '300'
-            Stat: Average
-      EvaluationPeriods: '1'
-      ComparisonOperator: GreaterThanThreshold
-      Threshold: '90'
-      TreatMissingData: "missing"
-      AlarmActions:
-        - !Ref SlackSNSTopic
-      OKActions: 
-        - !Ref SlackSNSTopic
-
-  DeliveryHighCPUAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Condition: CloudWatchAlarmsEnabled
-    Properties:
-      AlarmName: {{client_id}}/{{cluster_name}}/delivery-high-cpu-usage
-      AlarmDescription: Delivery in {{client_id}}/{{cluster_name}} pod CPU usage is > 80%
-      Metrics:
-        - Expression: !Sub "IF((DAY(m1) == ${BlackoutWindowDay} AND (HOUR(m1) >= ${BlackoutWindowStartHour} AND HOUR(m1) <= ${BlackoutWindowEndHour})), 1, m1)"
-          Id: pod_cpu_utilization
-          Period: '300'
-          ReturnData: True
-        - Id: m1
-          ReturnData: False
-          MetricStat:
-            Metric:
-              Dimensions:
-                - Name: Namespace
-                  Value: craftercms
-                - Name: Service
-                  Value: delivery-service
-                - Name: ClusterName
-                  Value: {{cluster_name}}
-              MetricName: pod_cpu_utilization
-              Namespace: ContainerInsights
-            Period: '300'
-            Stat: Average
-      EvaluationPeriods: '1'
-      ComparisonOperator: GreaterThanThreshold
-      Threshold: '80'
       TreatMissingData: "missing"
       AlarmActions:
         - !Ref SlackSNSTopic
