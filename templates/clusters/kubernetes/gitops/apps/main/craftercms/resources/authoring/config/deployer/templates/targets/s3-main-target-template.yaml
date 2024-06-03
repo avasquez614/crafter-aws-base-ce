@@ -23,6 +23,9 @@ aws:
 target:
   env: {{env}}
   siteName: {{site_name}}
+  {{#if source_target}}
+  sourceSiteName: {{source_target.siteName}}
+  {{/if}}
   localRepoPath: {{local_repo_path}}
   {{#if opensearch_url}}
   search:
@@ -59,6 +62,50 @@ target:
           CloudFrontSecretHeaderValue: ${aws.cloudformation.cloudfrontSecretHeaderValue}
           CloudFrontOriginAccessIdentityId: ${aws.cloudformation.cloudFrontOriginAccessIdentityId}
           CloudFrontLoggingS3BucketName: ${aws.cloudformation.cloudFrontLoggingS3BucketName}
+    {{#if source_target}}
+    duplicate:
+      - hookName: duplicateIndexLifecycleHook
+      - hookName: duplicateProcessCommitsFileLifecycleHook
+      - hookName: createCloudFormationLifecycleHook
+        region: ${aws.region}
+        accessKey: ${aws.cloudformation.accessKey}
+        secretKey: ${aws.cloudformation.secretKey}
+        stackName: ${aws.cloudformation.stackName}
+        templateFilename: main-site-stack.yaml
+        templateParams:
+          CreateBlobsBuckets:  ${aws.cloudformation.enableBlobsBucketsCreation}
+          CreateBackupBuckets:  ${aws.cloudformation.enableBackupBucketsCreation}
+          EnableS3OriginFailover:  ${aws.cloudformation.enableS3OriginFailover}      
+          SiteName: ${target.siteName}
+          EnvironmentVersion: ${environmentVersion}
+          BackupRegion: ${aws.backupRegion}
+          S3ReplicationRoleArn: ${aws.cloudformation.s3ReplicationRoleArn}
+          S3BackupBucketLambdaArn: ${aws.cloudformation.s3BackupBucketLambdaArn}
+          S3SiteBucketName: ${aws.cloudformation.s3SiteBucketName}
+          S3BackupSiteBucketName: ${aws.cloudformation.s3BackupSiteBucketName}
+          S3BlobsBucketName: ${aws.cloudformation.s3BlobsBucketName}
+          S3BackupBlobsBucketName: ${aws.cloudformation.s3BackupBlobsBucketName}
+          DeliveryLBDomainName: ${aws.cloudformation.deliveryLBDomainName}
+          CloudFrontCertificateArn: ${aws.cloudformation.cloudfrontCertificateArn}
+          AlternateCloudFrontDomainNames: ${aws.cloudformation.alternateCloudFrontDomainNames}
+          CloudFrontSecretHeaderName: ${aws.cloudformation.cloudfrontSecretHeaderName}
+          CloudFrontSecretHeaderValue: ${aws.cloudformation.cloudfrontSecretHeaderValue}
+          CloudFrontOriginAccessIdentityId: ${aws.cloudformation.cloudFrontOriginAccessIdentityId}
+          CloudFrontLoggingS3BucketName: ${aws.cloudformation.cloudFrontLoggingS3BucketName}
+      - hookName: waitTillCloudFormationStackUsableLifecycleHook
+        region: ${aws.region}
+        accessKey: ${aws.cloudformation.accessKey}
+        secretKey: ${aws.cloudformation.secretKey}
+        stackName: ${aws.cloudformation.stackName}
+      - hookName: duplicateS3LifecycleHook
+        region: ${aws.region}
+        accessKey: ${aws.accessKey}
+        secretKey: ${aws.secretKey}
+        url: ${aws.cloudformation.s3Url}
+        sourceConfig:
+          url: s3://${aws.cloudformation.s3BucketNamePrefix}-site-{{source_target.siteName}}/${environmentVersion}
+          localRepoPath: {{source.local_repo_path}}
+    {{/if}}
     init:
       - hookName: waitTillCloudFormationStackUsableLifecycleHook
         region: ${aws.region}

@@ -18,6 +18,9 @@ aws:
 target:
   env: {{env}}
   siteName: {{site_name}}
+  {{#if source_target}}
+  sourceSiteName: {{source_target.siteName}}
+  {{/if}}
   localRepoPath: {{local_repo_path}}
   {{#if opensearch_url}}
   search:
@@ -39,6 +42,35 @@ target:
           EnvironmentVersion: ${environmentVersion}
           S3SiteBucketName: ${aws.cloudformation.s3SiteBucketName}
           CloudFrontOriginAccessIdentityId: ${aws.cloudformation.cloudFrontOriginAccessIdentityId}
+    {{#if source_target}}
+    duplicate:
+      - hookName: duplicateIndexLifecycleHook
+      - hookName: duplicateProcessCommitsFileLifecycleHook
+      - hookName: createCloudFormationLifecycleHook
+        region: ${aws.region}
+        accessKey: ${aws.cloudformation.accessKey}
+        secretKey: ${aws.cloudformation.secretKey}
+        stackName: ${aws.cloudformation.stackName}
+        templateFilename: supplementary-site-stack.yaml
+        templateParams:  
+          SiteName: ${target.siteName}
+          EnvironmentVersion: ${environmentVersion}
+          S3SiteBucketName: ${aws.cloudformation.s3SiteBucketName}
+          CloudFrontOriginAccessIdentityId: ${aws.cloudformation.cloudFrontOriginAccessIdentityId}
+      - hookName: waitTillCloudFormationStackUsableLifecycleHook
+        region: ${aws.region}
+        accessKey: ${aws.cloudformation.accessKey}
+        secretKey: ${aws.cloudformation.secretKey}
+        stackName: ${aws.cloudformation.stackName}
+      - hookName: duplicateS3LifecycleHook
+        region: ${aws.region}
+        accessKey: ${aws.accessKey}
+        secretKey: ${aws.secretKey}
+        url: ${aws.cloudformation.s3Url}
+        sourceConfig:
+          url: s3://${aws.cloudformation.s3BucketNamePrefix}-site-{{source_target.siteName}}/${environmentVersion}
+          localRepoPath: {{source.local_repo_path}}
+    {{/if}}
     init:
       - hookName: waitTillCloudFormationStackUsableLifecycleHook
         region: ${aws.region}
