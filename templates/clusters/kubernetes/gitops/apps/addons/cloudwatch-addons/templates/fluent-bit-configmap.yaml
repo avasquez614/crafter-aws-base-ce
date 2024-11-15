@@ -87,6 +87,15 @@ data:
         extra_user_agent    container-insights
         log_retention_days  ${LOG_RETENTION_DAYS}
 
+    [OUTPUT]
+        Name s3
+        Match *
+        Log_key log
+        Bucket ${CLUSTER_LOGS_BUCKET}
+        Region ${AWS_REGION}
+        Store_dir /tmp/fluent-bit/s3
+        Total_file_size 10M
+
   dataplane-log.conf: |
     [INPUT]
         Name                systemd
@@ -133,6 +142,15 @@ data:
         auto_create_group   true
         extra_user_agent    container-insights
         log_retention_days  ${LOG_RETENTION_DAYS}
+        
+    [OUTPUT]
+        Name s3
+        Match *
+        Log_key log
+        Bucket ${CLUSTER_LOGS_BUCKET}
+        Region ${AWS_REGION}
+        Store_dir /tmp/fluent-bit/s3
+        Total_file_size 10M
 
   host-log.conf: |
     [INPUT]
@@ -182,6 +200,15 @@ data:
         auto_create_group   true
         extra_user_agent    container-insights
         log_retention_days  ${LOG_RETENTION_DAYS}
+    
+    [OUTPUT]
+        Name s3
+        Match *
+        Log_key log
+        Bucket ${CLUSTER_LOGS_BUCKET}
+        Region ${AWS_REGION}
+        Store_dir /tmp/fluent-bit/s3
+        Total_file_size 10M
 
   parsers.conf: |
     [PARSER]

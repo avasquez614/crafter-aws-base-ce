@@ -136,6 +136,12 @@ Parameters:
     AllowedValues:
       - true
       - false
+  EnableCloudFrontLogging:
+    Type: String
+    Default: false
+    AllowedValues:
+      - true
+      - false
 
 Conditions:
   IsTestStack:
@@ -164,8 +170,8 @@ Conditions:
     !Not [!Equals [!Ref CloudFrontCertificateArn, '']]
   AlternateCloudFrontDomainNamesSpecified:
     !Not [!Equals [!Join [',', !Ref AlternateCloudFrontDomainNames], '']]
-  EnableCloudFrontLogging:
-    !Not [!Equals [!Ref CloudFrontLoggingS3BucketName, '']]
+  ShouldEnableCloudFrontLoggingBucket:
+    !And [!Equals [true, !Ref EnableCloudFrontLogging], !Not [!Equals [!Ref CloudFrontLoggingS3BucketName, '']]]
 
 Resources:
   S3BackupSiteBucket:
@@ -180,6 +186,11 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Condition: ShouldCreateSiteBucket
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: {{environment}}
+        - Key: craftercms:prod
+          Value: {{prod_env}}
       BucketName: !Ref S3SiteBucketName
       AccessControl: Private
       PublicAccessBlockConfiguration:
@@ -235,6 +246,11 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Condition: ShouldCreateBlobsBuckets
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: {{environment}}
+        - Key: craftercms:prod
+          Value: {{prod_env}}
       BucketName: !Ref S3BlobsBucketName
       AccessControl: Private
       PublicAccessBlockConfiguration:
@@ -343,7 +359,7 @@ Resources:
           MinimumProtocolVersion: TLSv1.1_2016
         Logging:
           !If
-          - EnableCloudFrontLogging
+          - ShouldEnableCloudFrontLoggingBucket
           - Bucket: !Ref CloudFrontLoggingS3BucketName
             Prefix: !Sub '${EnvironmentVersion}/${SiteName}/'
           - !Ref 'AWS::NoValue'

@@ -7,7 +7,6 @@ data:
       scrape_interval: 1m
       scrape_timeout: 10s
     scrape_configs:
-    
     - bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
       job_name: kubernetes-nodes
       kubernetes_sd_configs:

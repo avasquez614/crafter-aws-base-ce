@@ -186,6 +186,11 @@ Resources:
   SendCWAlarmsToSlackLambda:
     Type: AWS::Lambda::Function
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: {{environment}}
+        - Key: craftercms:prod
+          Value: {{prod_env}}
       Runtime: python3.9
       Role: !GetAtt SendCWAlarmsToSlackLambdaRole.Arn
       Handler: index.handler

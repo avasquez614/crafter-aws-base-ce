@@ -8,13 +8,13 @@ export ENVIRONMENT=default
 # Required
 export ENVIRONMENT_VERSION=v1
 # Required
-export EKS_VERSION=1.30
+export EKS_VERSION=1.31
 # Required
-export EKSCTL_VERSION=v0.180.0
+export EKSCTL_VERSION=v0.191.0
 # Required (use versions specified in https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html)
-export KUBECTL_VERSION=v1.30.0
+export KUBECTL_VERSION=v1.31.0
 # Required
-export K9S_VERSION=v0.32.4
+export K9S_VERSION=v0.32.5
 # Required (default 9am EDT)
 export UPGRADE_NODES_CRON_UTC='0 13 * * 0'
 # Leave always empty
@@ -43,7 +43,7 @@ export AUTHORING_WORKER_INSTANCE_TYPE=m6i.xlarge
 export DELIVERY_WORKER_INSTANCE_TYPE=m6i.xlarge
 # Required. For PROD set to '5 minutes'; for NON-PROD set to '10 minutes'
 # Required
-export AUTHORING_TOMCAT_CONTAINER_MIN_CPU=2
+export AUTHORING_TOMCAT_CONTAINER_MIN_CPU=1.9
 # Required. Should match the number of Authoring license cores
 export AUTHORING_TOMCAT_CONTAINER_MAX_CPU=4
 # Required
@@ -51,7 +51,7 @@ export AUTHORING_TOMCAT_CONTAINER_MIN_MEMORY=8Gi
 # Required
 export AUTHORING_TOMCAT_CONTAINER_MAX_MEMORY=$AUTHORING_TOMCAT_CONTAINER_MIN_MEMORY
 # Required
-export AUTHORING_DEPLOYER_CONTAINER_MIN_CPU=1
+export AUTHORING_DEPLOYER_CONTAINER_MIN_CPU=0.9
 # Required
 export AUTHORING_DEPLOYER_CONTAINER_MAX_CPU=2
 # Required
@@ -88,6 +88,8 @@ export VPC_CIDR=10.1.0.0/16
 export NAT_GATEWAY_MODE=Single
 # Required (normally the VPN from where you're going to access the cluster with kubectl and SSH)
 export CLUSTER_PUBLIC_ACCESS_CIDRS=35.173.5.193/32,52.34.238.137/32
+# Required
+export OPEN_SEARCH_SINGLE_NODE_CLUSTER=false
 # Required (use a no more than 5 letters acronym if possible)
 export CLIENT_ID=
 # Required
@@ -104,6 +106,8 @@ export S3_CURRENT_REGION_BUCKET_NAME_PREFIX=$S3_BUCKET_NAME_BASE_PREFIX-r1
 export S3_BACKUP_REGION_BUCKET_NAME_PREFIX=$S3_BUCKET_NAME_BASE_PREFIX-r2
 # Required
 export CLOUDFRONT_LOGGING_S3_BUCKET_NAME=$CLIENT_ID-$CLUSTER_NAME_PREFIX-cloudfront-logs
+# Required
+export CLUSTER_LOGS_S3_BUCKET_NAME=$CLIENT_ID-$CLUSTER_NAME_PREFIX-logs
 # Required (normally it's just the URL of this Git repo)
 export GITOPS_REPO_URL=
 # Required (the Git branch, tag or commit with the config files to deploy)
