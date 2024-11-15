@@ -8,8 +8,6 @@ aws:
     stackName: ${aws.cloudformation.stackNamePrefix}-site-{{site_name}}
     s3SiteBucketName: ${aws.cloudformation.s3BucketNamePrefix}-site-{{site_name}}
     s3Url: s3://${aws.cloudformation.s3SiteBucketName}/${environmentVersion}
-    disableCloudformationDelete: ${aws.disableCloudFormationDeletion}
-    disableS3BucketClear: ${aws.disableS3BucketClear}
   {{#if aws.threads}}
   threads:
     {{#if aws.threads.size}}size: {{aws.threads.size}}{{/if}}
@@ -86,7 +84,7 @@ target:
         secretKey: ${aws.cloudformation.secretKey}
         bucketName: ${aws.cloudformation.s3SiteBucketName}
       - hookName: deleteCloudFormationLifecycleHook
-        disabled: ${aws.cloudformation.disableCloudformationDelete}
+        disabled: ${aws.cloudformation.disableCloudformationDeletion}
         region: ${aws.region}
         accessKey: ${aws.cloudformation.accessKey}
         secretKey: ${aws.cloudformation.secretKey}
@@ -125,7 +123,7 @@ target:
         accessKey: ${aws.accessKey}
         secretKey: ${aws.secretKey}
         url: ${aws.cloudformation.s3Url}
-      - processorName: elasticsearchIndexingProcessor
+      - processorName: searchIndexingProcessor
       # -------------------- END OF MAIN PIPELINE --------------------
       - processorName: fileOutputProcessor
       {{#if notifications.addresses}}

@@ -1,17 +1,28 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Crafter AWS resources for the region
+
+Parameters:
+  PagerDutyIntegrationUrl:
+    Type: String
+
 Resources:
+  RegionsPagerDutySNSTopic:
+    Type: AWS::SNS::Topic
+  
+  RegionsPagerDutySubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      RawMessageDelivery: False
+      TopicArn: !GetAtt RegionsPagerDutySNSTopic.TopicArn
+      Protocol: HTTPS
+      Endpoint: !Ref PagerDutyIntegrationUrl
+
   GuardDutyDetector:  
     Type: AWS::GuardDuty::Detector
     Properties:
       Enable: true
       Features: 
-        - AdditionalConfiguration: 
-            - Name: EC2_AGENT_MANAGEMENT
-              Status: ENABLED
-            - Name: EKS_ADDON_MANAGEMENT
-              Status: ENABLED
-          Name: RUNTIME_MONITORING
+        - Name: RUNTIME_MONITORING
           Status: ENABLED
         - Name: S3_DATA_EVENTS
           Status: ENABLED
@@ -22,3 +33,61 @@ Resources:
         - Name: RDS_LOGIN_EVENTS
           Status: ENABLED
       FindingPublishingFrequency: FIFTEEN_MINUTES
+
+  GuardDutyEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: High Severity Level notification for GuardDuty Findings
+      EventBusName: default
+      EventPattern:
+        source:
+          - aws.guardduty
+        detail-type:
+          - GuardDuty Finding
+        detail:
+          severity:
+            - 7
+            - 7
+            - 7.1
+            - 7.2
+            - 7.3
+            - 7.4
+            - 7.5
+            - 7.6
+            - 7.7
+            - 7.8
+            - 7.9
+            - 8
+            - 8
+            - 8.1
+            - 8.2
+            - 8.3
+            - 8.4
+            - 8.5
+            - 8.6
+            - 8.7
+            - 8.8
+            - 8.9
+      Name: HighSeverityLevelGuardDutyNotification
+      State: ENABLED
+      Targets:
+        - Id: guardDuty-high-severity-pagerduty-target
+          Arn: !GetAtt RegionsPagerDutySNSTopic.TopicArn
+          InputTransformer:
+            InputPathsMap:
+              Account_ID: $.detail.accountId
+              Finding_ID: $.detail.id
+              Finding_Type: $.detail.type
+              Finding_description: $.detail.description
+              region: $.region
+              severity: $.detail.severity
+            InputTemplate: >-
+              "AWS <Account_ID> has a severity <severity> GuardDuty finding type
+              <Finding_Type> in the <region> region."
+
+              "Finding Description:"
+
+              "<Finding_description>. "
+
+              "For more details open the GuardDuty console at
+              https://console.aws.amazon.com/guardduty/home?region=<region>#/findings?search=id%3D<Finding_ID>"

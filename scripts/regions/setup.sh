@@ -11,7 +11,8 @@ if [ -z "$resources_stack" ] || [ "$resources_stack" == "null" ]; then
     aws cloudformation create-stack --stack-name $RESOURCES_STACK_NAME \
         --region $REGION \
         --capabilities CAPABILITY_NAMED_IAM \
-        --template-body file://$RESOURCES_STACK_CONFIG_FILE
+        --template-body file://$RESOURCES_STACK_CONFIG_FILE --parameters \
+        ParameterKey=PagerDutyIntegrationUrl,ParameterValue="$PAGER_DUTY_INTEGRATION_URL"
     echo "Waiting for regions resources stack to be created..."
 
     aws cloudformation wait stack-create-complete --stack-name $RESOURCES_STACK_NAME

@@ -186,6 +186,11 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Condition: ShouldCreateSiteBucket
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: {{environment}}
+        - Key: craftercms:prod
+          Value: {{prod_env}}
       BucketName: !Ref S3SiteBucketName
       AccessControl: Private
       PublicAccessBlockConfiguration:
@@ -241,6 +246,11 @@ Resources:
     Type: 'AWS::S3::Bucket'
     Condition: ShouldCreateBlobsBuckets
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: {{environment}}
+        - Key: craftercms:prod
+          Value: {{prod_env}}
       BucketName: !Ref S3BlobsBucketName
       AccessControl: Private
       PublicAccessBlockConfiguration:

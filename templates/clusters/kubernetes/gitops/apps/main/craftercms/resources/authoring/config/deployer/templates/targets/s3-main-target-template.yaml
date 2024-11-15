@@ -13,8 +13,6 @@ aws:
     s3BackupBlobsBucketName: ${aws.cloudformation.s3BackupBucketNamePrefix}-blobs-{{site_name}}
     cloudfrontCertificateArn: {{#if aws.cloudformation.cloudfrontCertificateArn}}{{aws.cloudformation.cloudfrontCertificateArn}}{{else}}''{{/if}}
     alternateCloudFrontDomainNames: {{#if aws.cloudformation.alternateCloudFrontDomainNames}}{{aws.cloudformation.alternateCloudFrontDomainNames}}{{else}}''{{/if}}
-    disableCloudformationDelete: ${aws.disableCloudFormationDeletion}
-    disableS3BucketClear: ${aws.disableS3BucketClear}
   {{#if aws.threads}}
   threads:
     {{#if aws.threads.size}}size: {{aws.threads.size}}{{/if}}
@@ -42,6 +40,7 @@ target:
         secretKey: ${aws.cloudformation.secretKey}
         stackName: ${aws.cloudformation.stackName}
         templateFilename: main-site-stack.yaml
+        stackCapabilities: ${aws.cloudformation.stackCapabilities}
         templateParams:
           CreateBlobsBuckets:  ${aws.cloudformation.enableBlobsBucketsCreation}
           CreateBackupBuckets:  ${aws.cloudformation.enableBackupBucketsCreation}
@@ -130,7 +129,7 @@ target:
         secretKey: ${aws.cloudformation.secretKey}
         bucketName: ${aws.cloudformation.s3BlobsBucketName}
       - hookName: deleteCloudFormationLifecycleHook
-        disabled: ${aws.cloudformation.disableCloudformationDelete}
+        disabled: ${aws.cloudformation.disableCloudformationDeletion}
         region: ${aws.region}
         accessKey: ${aws.cloudformation.accessKey}
         secretKey: ${aws.cloudformation.secretKey}
@@ -175,7 +174,7 @@ target:
         accessKey: ${aws.accessKey}
         secretKey: ${aws.secretKey}
         url: ${aws.cloudformation.s3Url}
-      - processorName: elasticsearchIndexingProcessor
+      - processorName: searchIndexingProcessor
       # -------------------- END OF MAIN PIPELINE --------------------
       - processorName: fileOutputProcessor
       {{#if notifications.addresses}}

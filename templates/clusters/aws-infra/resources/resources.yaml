@@ -12,8 +12,8 @@ Parameters:
     Type: String
   OpenSearchVersion:
     Type: String
-    AllowedValues: ['OpenSearch_2.9','OpenSearch_2.7', 'OpenSearch_2.5', 'OpenSearch_2.3', 'OpenSearch_1.3']
-    Default: 'OpenSearch_2.9'
+    AllowedValues: ['OpenSearch_2.15', 'OpenSearch_2.13', 'OpenSearch_2.11', 'OpenSearch_2.9','OpenSearch_2.7', 'OpenSearch_2.5', 'OpenSearch_2.3', 'OpenSearch_1.3']
+    Default: 'OpenSearch_2.15'
   OpenSearchSingleNodeCluster:
     Type: String
     Default: false
@@ -45,9 +45,6 @@ Parameters:
   DeliveryInstanceCount:
     Type: String
     Default: '2'
-  AuthoringLoadBalancerArn:
-    Type: String
-    Default: ''
   CloudWatchAlarmsEnabled:
     Type: String
     Default: true
@@ -86,15 +83,126 @@ Conditions:
     !And [!Not [!Equals [!Ref BackupRegion, '']], !Not [!Equals [!Ref BackupRegionBucketNamePrefix, '']]]
   IsOpenSearchSingleNodeCluster:
     !Equals [true, !Ref OpenSearchSingleNodeCluster]
-  AuthoringLoadBalancerArnSpecified:
-    !Not [!Equals [!Ref AuthoringLoadBalancerArn, '']]
   CloudWatchAlarmsEnabled:
     !Equals [!Ref CloudWatchAlarmsEnabled, true]
 
 Resources:
-  AuthoringBotControlWebACL:
+  ClusterLogsBucket:
+    DeletionPolicy: Retain
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: {{cluster_logs_s3_bucket_name}}
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerPreferred
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: true
+        RestrictPublicBuckets: true
+
+  AuthoringNodeGroupSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: {{cluster_name}}-authoring-nodegroup-sg
+        GroupDescription: sg for authoring nodegroup in {{cluster_name}} to grant access to authoring loadblancer only
+        VpcId: !Ref VpcId
+        SecurityGroupIngress:
+          - FromPort: '8080'
+            IpProtocol: tcp
+            ToPort: '8080'
+            SourceSecurityGroupId: !Ref AuthoringBackendSecurityGroup
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            FromPort: 0
+            ToPort: 0
+            CidrIp: 0.0.0.0/0
+
+  AuthoringBackendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: {{cluster_name}}-authoring-backend-sg
+      GroupDescription: Backend sg for authoring LB in {{cluster_name}}
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 0
+          CidrIp: 0.0.0.0/0
+
+  AuthoringFrontendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: {{cluster_name}}-authoring-frontend-sg
+      GroupDescription: Frontend sg for authoring LB in {{cluster_name}}
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - FromPort: '443'
+          IpProtocol: tcp
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - FromPort: '80'
+          IpProtocol: tcp
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 0
+          CidrIp: 0.0.0.0/0
+
+  DeliveryNodeGroupSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        GroupName: {{cluster_name}}-delivery-nodegroup-sg
+        GroupDescription: sg for delivery nodegroup in {{cluster_name}} to grant access to delivery loadblancer only
+        VpcId: !Ref VpcId
+        SecurityGroupIngress:
+          - FromPort: '8080'
+            IpProtocol: tcp
+            ToPort: '8080'
+            SourceSecurityGroupId: !Ref DeliveryBackendSecurityGroup
+        SecurityGroupEgress:
+          - IpProtocol: -1
+            FromPort: 0
+            ToPort: 0
+            CidrIp: 0.0.0.0/0
+
+  DeliveryBackendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: {{cluster_name}}-delivery-backend-sg
+      GroupDescription: Backend sg for delivery LB in {{cluster_name}}
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 0
+          CidrIp: 0.0.0.0/0
+
+  DeliveryFrontendSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: {{cluster_name}}-delivery-frontend-sg
+      GroupDescription: Frontend sg for delivery LB in {{cluster_name}}
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - FromPort: '443'
+          IpProtocol: tcp
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - FromPort: '80'
+          IpProtocol: tcp
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 0
+          CidrIp: 0.0.0.0/0
+
+  AuthoringWebACL:
     Type: AWS::WAFv2::WebACL
-    Condition: AuthoringLoadBalancerArnSpecified
     Properties:
       Description: Bot control WebACL for Authoring in the {{cluster_name}} cluster
       VisibilityConfig:
@@ -106,25 +214,26 @@ Resources:
       Scope:
         "REGIONAL"
       Rules: 
-        - Name: botcontrolrules
+        - Name: bot-control-rules
           OverrideAction:
-            Count: {}
+            None: {}
           Priority: 0
           Statement:
             ManagedRuleGroupStatement:
               VendorName: AWS
               Name: AWSManagedRulesBotControlRuleSet
+              ManagedRuleGroupConfigs:
+                - AWSManagedRulesBotControlRuleSet:
+                    EnableMachineLearning: false
+                    InspectionLevel: COMMON
+              RuleActionOverrides:
+                - Name: CategoryMonitoring
+                  ActionToUse:
+                    Allow: {}
           VisibilityConfig:
             CloudWatchMetricsEnabled: true
-            MetricName: AllowedRequests
+            MetricName: bot-control-rules
             SampledRequestsEnabled: true
-
-  AuthoringLoadBalancerWebACLAssociation:  
-    Type: AWS::WAFv2::WebACLAssociation
-    Condition: AuthoringLoadBalancerArnSpecified
-    Properties:
-      ResourceArn: !Ref AuthoringLoadBalancerArn
-      WebACLArn: !GetAtt AuthoringBotControlWebACL.Arn
 
   AlarmsSNSTopic:
     Type: AWS::SNS::Topic
@@ -173,6 +282,11 @@ Resources:
   SendCWAlarmsToSlackLambda:
     Type: AWS::Lambda::Function
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: {{environment}}
+        - Key: craftercms:prod
+          Value: {{prod_env}}
       Runtime: python3.9
       Role: !GetAtt SendCWAlarmsToSlackLambdaRole.Arn
       Handler: index.handler
@@ -679,7 +793,7 @@ Resources:
     Condition: CloudWatchAlarmsEnabled
     Properties:
       AlarmName: {{client_id}}/{{cluster_name}}/authoring-logs-volume-usage
-      AlarmDescription: Logs volume usage in Authoring {{client_id}}/{{cluster_name}} pod is more than 5 GB
+      AlarmDescription: Logs volume usage in Authoring {{client_id}}/{{cluster_name}} pod is more than 16 GB
       Metrics:
         - Expression: !Sub "IF((DAY(m1) == ${BlackoutWindowDay} AND (HOUR(m1) >= ${BlackoutWindowStartHour} AND HOUR(m1) <= ${BlackoutWindowEndHour})), 500000000, m1)"
           Id: kubelet_volume_stats_used_bytes
@@ -702,7 +816,7 @@ Resources:
             Stat: Average
       EvaluationPeriods: '1'
       ComparisonOperator: GreaterThanThreshold
-      Threshold: '5000000000'
+      Threshold: '16000000000'
       TreatMissingData: "missing"
       AlarmActions:
         - !Ref CloudOpsSNSTopic
@@ -747,6 +861,55 @@ Resources:
       OKActions: 
         - !Ref CloudOpsSNSTopic
         - !Ref SlackSNSTopic
+
+  GuardDutyEndPoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref VpcId
+      VpcEndpointType: Interface
+      PrivateDnsEnabled: True
+      SecurityGroupIds:
+          - !Ref GuardDutySecurityGroup
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.guardduty-data"
+      SubnetIds: !Ref PrivateSubnetIds
+      PolicyDocument: !Sub |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Action": "*",
+              "Resource": "*",
+              "Effect": "Allow",
+              "Principal": "*"
+            },
+            {
+              "Condition": {
+                "StringNotEquals": {
+                  "aws:PrincipalAccount": "${AWS::AccountId}" 
+                }
+              },
+              "Action": "*",
+              "Resource": "*",
+              "Effect": "Deny",
+              "Principal": "*"
+            }
+          ]
+        }
+  GuardDutySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "GuardDuty security group"
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - FromPort: '443'
+          IpProtocol: tcp
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 1
+          ToPort: 1
+          CidrIp: 0.0.0.0/32
 
   S3Endpoint:
     Type: AWS::EC2::VPCEndpoint
@@ -882,6 +1045,11 @@ Resources:
     Type: AWS::Lambda::Function
     Condition: UseBackupRegion
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: {{environment}}
+        - Key: craftercms:prod
+          Value: {{prod_env}}
       FunctionName: "{{cluster_name}}-s3-backup-bucket-lambda"
       Runtime: python3.9
       Role: !GetAtt S3BackupBucketLambdaRole.Arn
@@ -975,3 +1143,17 @@ Outputs:
   S3BackupBucketLambdaArn:
     Value: !GetAtt [S3BackupBucketLambda, Arn]
     Condition: UseBackupRegion
+  AuthoringWebACLArn:
+    Value: !GetAtt AuthoringWebACL.Arn
+  AuthoringBackendSecurityGroup:
+    Value: !GetAtt AuthoringBackendSecurityGroup.GroupId
+  AuthoringFrontendSecurityGroup:
+    Value: !GetAtt AuthoringFrontendSecurityGroup.GroupId
+  AuthoringNodeGroupSecurityGroup:
+    Value: !GetAtt AuthoringNodeGroupSecurityGroup.GroupId
+  DeliveryBackendSecurityGroup:
+    Value: !GetAtt DeliveryBackendSecurityGroup.GroupId
+  DeliveryFrontendSecurityGroup:
+    Value: !GetAtt DeliveryFrontendSecurityGroup.GroupId
+  DeliveryNodeGroupSecurityGroup:
+    Value: !GetAtt DeliveryNodeGroupSecurityGroup.GroupId

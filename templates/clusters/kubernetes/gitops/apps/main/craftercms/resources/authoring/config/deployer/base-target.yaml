@@ -4,9 +4,10 @@ environmentVersion: ${env:ENVIRONMENT_VERSION}
 aws:
   region: ${env:AWS_DEFAULT_REGION}
   backupRegion: ${env:AWS_BACKUP_REGION}
-  disableS3BucketClear: ${env:DISABLE_BUCKET_CLEAR_ON_TARGET_DELETION}
-  disableCloudFormationDeletion: ${env:DISABLE_CLOUDFORMATION_DELETION_ON_TARGET_DELETION}  
   cloudformation:
+    disableS3BucketClear: ${env:DISABLE_BUCKET_CLEAR_ON_TARGET_DELETION}
+    disableCloudformationDeletion: ${env:DISABLE_CLOUDFORMATION_DELETION_ON_TARGET_DELETION}
+    stackCapabilities: ${env:CLOUDFORMATION_STACK_CAPABILITIES} 
     enableBlobsBucketsCreation: ${env:ENABLE_BLOBS_BUCKETS_CREATION}
     enableBackupBucketsCreation: ${env:ENABLE_BACKUP_BUCKETS_CREATION}
     enableS3OriginFailover: ${env:ENABLE_S3_ORIGIN_FAILOVER}
@@ -20,6 +21,12 @@ aws:
     cloudfrontSecretHeaderValue: ${env:CLOUDFRONT_SECRET_HEADER_VALUE}
     cloudFrontOriginAccessIdentityId: ${env:CLOUDFRONT_ORIGIN_ACCESS_IDENTITY_ID}
     cloudFrontLoggingS3BucketName: ${env:CLOUDFRONT_LOGGING_S3_BUCKET_NAME}.s3.amazonaws.com
+  # Thread pool for S3 uploads
+  threads:
+    # The size of the thread pool
+    size: 25
+    # The max size of the thread pool
+    max: 50
 
 git:
   httpsServer:
