@@ -35,7 +35,8 @@ if [ -z "$resources_stack" ] || [ "$resources_stack" == "null" ]; then
         ParameterKey=DeliveryInstanceCount,ParameterValue=$DELIVERY_INSTANCE_COUNT \
         ParameterKey=CloudWatchAlarmsEnabled,ParameterValue=$ENABLE_CLOUDWATCH_ALARMS \
         ParameterKey=AlarmsEmailAddress,ParameterValue=$ALARMS_EMAIL_ADDRESS \
-        ParameterKey=AlarmsSlackChannelHookUrl,ParameterValue=$ALARMS_SLACK_CHANNEL_HOOK_URL
+        ParameterKey=AlarmsSlackChannelHookUrl,ParameterValue=$ALARMS_SLACK_CHANNEL_HOOK_URL \
+        ParameterKey=OpenSearchSingleNodeCluster,ParameterValue=$OPEN_SEARCH_SINGLE_NODE_CLUSTER
 
     cecho "Waiting for resources stack to be created..." "info"
 

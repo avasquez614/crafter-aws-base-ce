@@ -36,6 +36,11 @@ env_resources_stack=$(aws cloudformation describe-stacks --region $ENVIRONMENT_R
 cloudfront_oai_id=$(echo $env_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="CloudFrontOriginAccessIdentityId").OutputValue')
 s3_replication_role_arn=$(echo $env_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="S3ReplicationRoleArn").OutputValue')
 
+prod_env=false
+if [[ $ENVIRONMENT =~ "prod" ]]; then
+  prod_env=true
+fi
+
 if [ -z "$CRAFTER_MANAGEMENT_TOKEN" ]; then
     CRAFTER_MANAGEMENT_TOKEN=$(gen_random_pswd_only_alphanumeric 40)
     update_var 'CRAFTER_MANAGEMENT_TOKEN' "$CRAFTER_MANAGEMENT_TOKEN"
@@ -117,6 +122,7 @@ find . -type f ! -name setup.sh -exec sed -i "s/{{mail_smtp_starttls}}/${MAIL_SM
 find . -type f ! -name setup.sh -exec sed -i "s~{{alarms_email_address}}~${ALARMS_EMAIL_ADDRESS}~g" {} \;
 find . -type f ! -name setup.sh -exec sed -i "s/{{argocd_project}}/${ARGOCD_PROJECT}/g" {} \;
 find . -type f ! -name setup.sh -exec sed -i "s~{{delivery_domain_name}}~${DELIVERY_DOMAIN_NAME}~g" {} \;
+find . -type f ! -name setup.sh -exec sed -i "s~{{prod_env}}~$prod_env~g" {} \;
 
 cd $SCRIPTS_HOME
 
@@ -133,10 +139,31 @@ echo "--------------------------------------------------------------------------
 read -p "> Resources CloudFormation stack created. Press enter to continue"
 echo "--------------------------------------------------------------------------------"
 
+cd $CLUSTER_HOME
+
+cluster_resources_stack=$(aws cloudformation describe-stacks --stack-name $CLUSTER_NAME-resources | jq '.Stacks[0]')
+authoring_ng_sg=$(echo $cluster_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="AuthoringNodeGroupSecurityGroup").OutputValue')
+authoring_frontend_sg=$(echo $cluster_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="AuthoringFrontendSecurityGroup").OutputValue')
+authoring_backend_sg=$(echo $cluster_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="AuthoringBackendSecurityGroup").OutputValue')
+
+find . -type f ! -name setup.sh -exec sed -i "s/{{authoring_frontend_sg}}/${authoring_frontend_sg}/g" {} \;
+find . -type f ! -name setup.sh -exec sed -i "s~{{authoring_backend_sg}}~${authoring_backend_sg}~g" {} \;
+find . -type f ! -name setup.sh -exec sed -i "s~{{authoring_ng_sg}}~$authoring_ng_sg~g" {} \;
+
+delivery_ng_sg=$(echo $cluster_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="DeliveryNodeGroupSecurityGroup").OutputValue')
+delivery_frontend_sg=$(echo $cluster_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="DeliveryFrontendSecurityGroup").OutputValue')
+delivery_backend_sg=$(echo $cluster_resources_stack | jq -r '.Outputs[] | select(.OutputKey=="DeliveryBackendSecurityGroup").OutputValue')
+
+find . -type f ! -name setup.sh -exec sed -i "s/{{delivery_ng_sg}}/${delivery_ng_sg}/g" {} \;
+find . -type f ! -name setup.sh -exec sed -i "s~{{delivery_frontend_sg}}~${delivery_frontend_sg}~g" {} \;
+find . -type f ! -name setup.sh -exec sed -i "s~{{delivery_backend_sg}}~$delivery_backend_sg~g" {} \;
+
+cd $SCRIPTS_HOME
+
 ./aws-infra/resources/create-secrets.sh
 
 read -p "> Secrets created. Press enter to continue"
-echo "--------------------------------------------------------------------------------"
+echo "--------------------------- -----------------------------------------------------"
 
 ./aws-infra/eks/create-node-groups.sh
 

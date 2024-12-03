@@ -5,6 +5,9 @@ metadata:
   version: "{{eks_version}}"
   name: {{cluster_name}}
   region: {{aws_region}}
+  tags:
+    craftercms:environment: "{{environment}}"
+    craftercms:prod: "{{prod_env}}"
 
 availabilityZones: ["{{aws_az_1}}", "{{aws_az_2}}", "{{aws_az_3}}"]
 
@@ -65,6 +68,13 @@ iam:
       attachPolicyARNs:
       - "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
       - "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"
+      attachPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: "*"
     - metadata:
         name: external-secrets
         namespace: external-secrets
@@ -129,6 +139,7 @@ iam:
               - 's3:ListBucketVersions'
               - 's3:GetObjectVersion'
               - 's3:DeleteObjectVersion'
+              - 's3:PutBucketTagging'
             Resource: 
               - "arn:aws:s3:::{{s3_bucket_name_base_prefix}}-r?-*"
           - Effect: Allow
@@ -176,6 +187,8 @@ managedNodeGroups:
       # EC2 tags required for cluster-autoscaler auto-discovery
       k8s.io/cluster-autoscaler/enabled: "true"
       k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
+      craftercms:environment: "{{environment}}"
+      craftercms:prod: "{{prod_env}}"
     labels:
       node-type: k8s-support
     instanceType: t3a.large
@@ -190,6 +203,8 @@ managedNodeGroups:
       # EC2 tags required for cluster-autoscaler auto-discovery
       k8s.io/cluster-autoscaler/enabled: "true"
       k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
+      craftercms:environment: "{{environment}}"
+      craftercms:prod: "{{prod_env}}"
     labels:
       node-type: k8s-support
     instanceType: t3a.large
@@ -205,6 +220,8 @@ managedNodeGroups:
       # EC2 tags required for cluster-autoscaler auto-discovery
       k8s.io/cluster-autoscaler/enabled: "true"
       k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
+      craftercms:environment: "{{environment}}"
+      craftercms:prod: "{{prod_env}}"
     labels:
       node-type: authoring
       monitored: "true"
@@ -218,6 +235,8 @@ managedNodeGroups:
     maxSize: 10
     volumeSize: 50
     privateNetworking: true
+    securityGroups: 
+      attachIDs: ["{{authoring_ng_sg}}"]
 
   # Delivery workers
   - name: delivery-workers-v1
@@ -225,6 +244,8 @@ managedNodeGroups:
       # EC2 tags required for cluster-autoscaler auto-discovery
       k8s.io/cluster-autoscaler/enabled: "true"
       k8s.io/cluster-autoscaler/{{cluster_name}}: "owned"
+      craftercms:environment: "{{environment}}"
+      craftercms:prod: "{{prod_env}}"
     labels:
       node-type: delivery
       monitored: "true"
@@ -237,3 +258,10 @@ managedNodeGroups:
     maxSize: 20
     volumeSize: 20
     privateNetworking: true
+    securityGroups: 
+      attachIDs: ["{{delivery_ng_sg}}"]
+
+addons:
+- name: aws-guardduty-agent
+  configurationValues: "{\"resources\":{\"limits\":{\"cpu\":\"300m\",\"memory\":\"512Mi\"},\"requests\":{\"cpu\":\"200m\",\"memory\":\"256Mi\"}}}"
+

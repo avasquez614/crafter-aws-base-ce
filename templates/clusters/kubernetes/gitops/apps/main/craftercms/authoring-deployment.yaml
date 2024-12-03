@@ -13,10 +13,14 @@ metadata:
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '30'
     alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=600
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/tags: craftercms:environment={{environment}},craftercms:prod={{prod_env}}
     # # Uncomment after generating the SSL cert and validating it
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     # alb.ingress.kubernetes.io/ssl-redirect: '443'
     # alb.ingress.kubernetes.io/certificate-arn: ''
+    alb.ingress.kubernetes.io/wafv2-acl-arn: '{{authoring_web_acl_arn}}'
+    alb.ingress.kubernetes.io/security-groups: "{{authoring_frontend_sg}},{{authoring_backend_sg}}"
+    alb.ingress.kubernetes.io/manage-backend-security-group-rules: "false"
 spec:
   ingressClassName: alb
   rules:
@@ -565,3 +569,5 @@ spec:
             - name: CRON_SCHEDULE
               # Every hour
               value: '0 * * * *'
+            - name: LOGROTATE_SIZE
+              value: 50M

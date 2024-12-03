@@ -4,9 +4,9 @@ environmentVersion: ${env:ENVIRONMENT_VERSION}
 aws:
   region: ${env:AWS_DEFAULT_REGION}
   backupRegion: ${env:AWS_BACKUP_REGION}
-  disableS3BucketClear: ${env:DISABLE_BUCKET_CLEAR_ON_TARGET_DELETION}
-  disableCloudFormationDeletion: ${env:DISABLE_CLOUDFORMATION_DELETION_ON_TARGET_DELETION}  
   cloudformation:
+    disableS3BucketClear: ${env:DISABLE_BUCKET_CLEAR_ON_TARGET_DELETION}
+    disableCloudformationDeletion: ${env:DISABLE_CLOUDFORMATION_DELETION_ON_TARGET_DELETION}
     enableBlobsBucketsCreation: ${env:ENABLE_BLOBS_BUCKETS_CREATION}
     enableBackupBucketsCreation: ${env:ENABLE_BACKUP_BUCKETS_CREATION}
     enableS3OriginFailover: ${env:ENABLE_S3_ORIGIN_FAILOVER}

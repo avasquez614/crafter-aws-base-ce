@@ -9,6 +9,10 @@ Parameters:
   CloudFrontLoggingS3BucketName:
     Type: String
 
+Conditions:
+  IsProdEnvironment:
+    !Equals ['prod', !Ref Environment]
+
 Resources:
   CloudFrontOriginAccessIdentity:
     Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
@@ -19,6 +23,11 @@ Resources:
   CloudFrontLoggingS3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
+      Tags:
+        - Key: craftercms:environment
+          Value: !Ref Environment
+        - Key: craftercms:prod
+          Value: !If [IsProdEnvironment, 'true', 'false']
       BucketName: !Ref CloudFrontLoggingS3BucketName
       OwnershipControls:
         Rules:

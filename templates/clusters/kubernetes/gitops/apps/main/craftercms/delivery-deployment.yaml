@@ -23,6 +23,9 @@ metadata:
     alb.ingress.kubernetes.io/actions.block-request: >
       {"type":"fixed-response","fixedResponseConfig":{"contentType":"text/plain","statusCode":"403","messageBody":"403 External access to endpoint not allowed"}}
     alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+    alb.ingress.kubernetes.io/tags: craftercms:environment={{environment}},craftercms:prod={{prod_env}}
+    alb.ingress.kubernetes.io/security-groups: "{{delivery_frontend_sg}},{{delivery_backend_sg}}"
+    alb.ingress.kubernetes.io/manage-backend-security-group-rules: "false"
     # # Uncomment after generating the SSL cert and validating it
     # alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     # alb.ingress.kubernetes.io/ssl-redirect: '443'
@@ -282,4 +285,6 @@ spec:
           env:
             - name: CRON_SCHEDULE
               # Every hour
-              value: '0 * * * *'             
+              value: '0 * * * *' 
+            - name: LOGROTATE_SIZE
+              value: 50M            
