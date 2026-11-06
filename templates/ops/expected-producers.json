@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "report_types": ["infra_upgrade", "volume_backup", "eks_node_upgrade"],
+  "notes": "UTSW dev/qc omitted (no EKS yet). Every producer row includes region. S3 keys are period/client/cluster/region/report_type.json so TPCI multi-region clusters do not overwrite. Legacy 4-part keys still count for a client/cluster that has exactly one expected region.",
+  "producers": [
+    {"client": "azam", "cluster": "crafter-dev-v2", "region": "us-east-1", "account_id": "059612965647"},
+    {"client": "azam", "cluster": "crafter-uat-v2", "region": "us-east-1", "account_id": "059612965647"},
+    {"client": "azam", "cluster": "crafter-prod-v2", "region": "us-east-1", "account_id": "059612965647"},
+    {"client": "bcbsm", "cluster": "crafter-dev-v1", "region": "us-east-1", "account_id": "704601633278"},
+    {"client": "bcbsm", "cluster": "crafter-prod-v1", "region": "us-east-1", "account_id": "704601633278"},
+    {"client": "bnym", "cluster": "crafter-test-v1", "region": "us-east-1", "account_id": "179231817921"},
+    {"client": "bnym", "cluster": "crafter-qa-v1", "region": "us-east-1", "account_id": "179231817921"},
+    {"client": "bnym", "cluster": "crafter-prod-v1", "region": "us-east-1", "account_id": "179231817921"},
+    {"client": "cc3", "cluster": "crafter-prod-v2", "region": "us-east-1", "account_id": "436619279051"},
+    {"client": "cpac", "cluster": "crafter-dev-v2", "region": "ca-central-1", "account_id": "418137469520"},
+    {"client": "cpac", "cluster": "crafter-qa-v2", "region": "ca-central-1", "account_id": "418137469520"},
+    {"client": "cpac", "cluster": "crafter-prod-v2", "region": "ca-central-1", "account_id": "418137469520"},
+    {"client": "encoura", "cluster": "crafter-dev-v1", "region": "us-east-1", "account_id": "107997700568"},
+    {"client": "encoura", "cluster": "crafter-qa-v1", "region": "us-east-1", "account_id": "107997700568"},
+    {"client": "encoura", "cluster": "crafter-prod-v1", "region": "us-east-1", "account_id": "107997700568"},
+    {"client": "ure", "cluster": "crafter-prod-v1", "region": "ap-south-1", "account_id": "573247409365"},
+    {"client": "utsw", "cluster": "crafter-prod-v1", "region": "us-east-1", "account_id": "012832591526"},
+    {"client": "tpci", "cluster": "crafter-dev-v4", "region": "us-west-2", "account_id": "402510220189"},
+    {"client": "tpci", "cluster": "crafter-dev-v5", "region": "us-west-2", "account_id": "402510220189"},
+    {"client": "tpci", "cluster": "crafter-stable-v4", "region": "us-west-2", "account_id": "258832271378"},
+    {"client": "tpci", "cluster": "crafter-stable-v4", "region": "us-east-1", "account_id": "258832271378"},
+    {"client": "tpci", "cluster": "crafter-prod-v4", "region": "us-west-2", "account_id": "046803469129"},
+    {"client": "tpci", "cluster": "crafter-prod-v4", "region": "us-east-1", "account_id": "046803469129"},
+    {"client": "tpci", "cluster": "crafter-prod-v4", "region": "eu-west-1", "account_id": "046803469129"}
+  ]
+}
